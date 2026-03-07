@@ -24,6 +24,7 @@ const navItems = [
   { path: '/tasks', icon: ListTodo, label: 'Tasks' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/contacts', icon: Users, label: 'Contacts' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export const Layout = ({ children }) => {
@@ -95,24 +96,6 @@ export const Layout = ({ children }) => {
             );
           })}
         </nav>
-
-        {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
-          <NavLink
-            to="/settings"
-            onClick={() => setSidebarOpen(false)}
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors",
-              location.pathname === '/settings'
-                ? "text-[#FFC300] bg-[#FFC300]/15"
-                : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
-            )}
-            data-testid="nav-settings"
-          >
-            <Settings size={20} />
-            <span className="text-sm">Settings</span>
-          </NavLink>
-        </div>
       </aside>
 
       {/* Main Content */}
