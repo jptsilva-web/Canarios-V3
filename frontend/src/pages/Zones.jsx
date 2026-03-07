@@ -4,7 +4,8 @@ import {
   Plus, 
   Grid3X3,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Heart
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -254,6 +255,7 @@ export const Zones = () => {
     rows: 4,
     columns: 4,
   });
+  const [selectedCage, setSelectedCage] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -308,15 +310,22 @@ export const Zones = () => {
   };
 
   const handleCageClick = (cage, pair) => {
-    if (pair) {
-      // Navigate to pairs page if cage has a pair
-      navigate('/pairs');
-      toast.info(`${t('zones.cage')} ${cage.label}: ${pair.name || t('pairs.pairName')}`);
-    } else {
-      // Navigate to pairs page to create a new pair for this cage
-      toast.info(`${t('zones.cage')} ${cage.label}: ${t('zones.empty')}`);
-      navigate('/pairs');
-    }
+    // Get clutch data for this cage's pair
+    const pairClutches = pair ? clutches.filter(c => c.pair_id === pair.id) : [];
+    const activeClutch = pairClutches.find(c => c.status !== 'completed');
+    
+    setSelectedCage({
+      cage,
+      pair,
+      clutches: pairClutches,
+      activeClutch,
+      stats: {
+        totalClutches: pairClutches.length,
+        totalEggs: pairClutches.reduce((acc, c) => acc + (c.eggs?.length || 0), 0),
+        hatchedEggs: pairClutches.reduce((acc, c) => acc + (c.eggs?.filter(e => e.status === 'hatched')?.length || 0), 0),
+        fertileEggs: pairClutches.reduce((acc, c) => acc + (c.eggs?.filter(e => e.status === 'fertile')?.length || 0), 0),
+      }
+    });
   };
 
   if (loading) {
@@ -451,6 +460,107 @@ export const Zones = () => {
           ))}
         </div>
       )}
+
+      {/* Cage Details Dialog */}
+      <Dialog open={!!selectedCage} onOpenChange={() => setSelectedCage(null)}>
+        <DialogContent className="bg-[#202940] border-white/10 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white font-['Barlow_Condensed'] text-xl flex items-center gap-2">
+              <Grid3X3 className="text-[#FFC300]" size={20} />
+              {t('zones.cage')} {selectedCage?.cage?.label}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedCage?.pair ? (
+            <div className="space-y-4">
+              {/* Pair Info */}
+              <div className="p-4 rounded-lg bg-[#1A2035]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Heart className="text-[#E91E63]" size={16} />
+                  <span className="text-white font-medium">{selectedCage.pair.name || t('pairs.pairName')}</span>
+                  <span className={cn(
+                    'ml-auto px-2 py-0.5 rounded text-xs',
+                    selectedCage.activeClutch 
+                      ? 'bg-[#00BFA6]/20 text-[#00BFA6]' 
+                      : 'bg-slate-600/20 text-slate-400'
+                  )}>
+                    {selectedCage.activeClutch ? t(`pairs.clutchStatus.${selectedCage.activeClutch.status}`) : t('common.active')}
+                  </span>
+                </div>
+                
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-[#FFC300]">{selectedCage.stats.totalClutches}</p>
+                    <p className="text-xs text-slate-400">{t('pairs.clutches')}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-[#FF9800]">{selectedCage.stats.totalEggs}</p>
+                    <p className="text-xs text-slate-400">{t('pairs.eggs')}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-[#00BFA6]">{selectedCage.stats.fertileEggs}</p>
+                    <p className="text-xs text-slate-400">{t('pairs.eggStatus.fertile')}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-[#00BFA6]">{selectedCage.stats.hatchedEggs}</p>
+                    <p className="text-xs text-slate-400">{t('pairs.eggStatus.hatched')}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => {
+                  setSelectedCage(null);
+                  navigate('/pairs');
+                }}
+                className="w-full bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
+              >
+                {t('common.view')} {t('pairs.title')}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Empty Cage */}
+              <div className="p-6 rounded-lg bg-[#1A2035] text-center">
+                <Grid3X3 className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+                <p className="text-white font-medium">{t('zones.empty')}</p>
+                <p className="text-sm text-slate-400 mt-1">{t('zones.noPairAssigned')}</p>
+                
+                {/* Zero Stats */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-slate-500">0</p>
+                    <p className="text-xs text-slate-400">{t('pairs.clutches')}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-slate-500">0</p>
+                    <p className="text-xs text-slate-400">{t('pairs.eggs')}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-slate-500">0</p>
+                    <p className="text-xs text-slate-400">{t('pairs.eggStatus.fertile')}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-[#202940]">
+                    <p className="text-2xl font-bold text-slate-500">0</p>
+                    <p className="text-xs text-slate-400">{t('pairs.eggStatus.hatched')}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => {
+                  setSelectedCage(null);
+                  navigate('/pairs');
+                }}
+                className="w-full bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
+              >
+                <Plus size={16} className="mr-2" /> {t('pairs.addPair')}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>

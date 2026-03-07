@@ -47,6 +47,8 @@ export const translations = {
       year: 'Ano',
       update: 'Atualizar',
       create: 'Criar',
+      view: 'Ver',
+      required: 'obrigatório',
     },
     // Messages (Toast notifications)
     messages: {
@@ -235,6 +237,7 @@ export const translations = {
       occupied: 'Ocupada',
       paired: 'emparelhada',
       noCages: 'Nenhuma gaiola gerada ainda',
+      noPairAssigned: 'Nenhum casal atribuído a esta gaiola',
       weaning: 'Desmame',
     },
     // Calendar
@@ -447,6 +450,8 @@ export const translations = {
       year: 'Year',
       update: 'Update',
       create: 'Create',
+      view: 'View',
+      required: 'required',
     },
     // Messages (Toast notifications)
     messages: {
@@ -635,6 +640,7 @@ export const translations = {
       occupied: 'Occupied',
       paired: 'paired',
       noCages: 'No cages generated yet',
+      noPairAssigned: 'No pair assigned to this cage',
       weaning: 'Weaning',
     },
     // Calendar
@@ -847,6 +853,8 @@ export const translations = {
       year: 'Año',
       update: 'Actualizar',
       create: 'Crear',
+      view: 'Ver',
+      required: 'obligatorio',
     },
     // Messages (Toast notifications)
     messages: {
@@ -1035,6 +1043,7 @@ export const translations = {
       occupied: 'Ocupada',
       paired: 'emparejada',
       noCages: 'Ninguna jaula generada aún',
+      noPairAssigned: 'Ninguna pareja asignada a esta jaula',
       weaning: 'Destete',
     },
     // Calendar
