@@ -104,20 +104,24 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
     }
   };
 
-  // Render hatched egg as a bird icon
+  // Render hatched egg as a bird icon with band number displayed
   if (egg.status === 'hatched') {
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#00BFA6] text-white hover:bg-[#00BFA6]/80 transition-colors relative"
+            className="flex flex-col items-center gap-0.5 group"
             title={`Chick ${index + 1}: ${egg.band_number || 'Not banded'}`}
           >
-            <Bird size={20} />
-            {egg.band_number && (
-              <span className="absolute -bottom-1 -right-1 bg-[#FFC300] text-[#1A2035] text-[8px] font-bold px-1 rounded">
-                ✓
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#00BFA6] text-white group-hover:bg-[#00BFA6]/80 transition-colors relative">
+              <Bird size={20} />
+            </div>
+            {egg.band_number ? (
+              <span className="text-[9px] font-mono font-bold text-[#FFC300] bg-[#1A2035] px-1.5 py-0.5 rounded border border-[#FFC300]/30 max-w-[60px] truncate">
+                {egg.band_number}
               </span>
+            ) : (
+              <span className="text-[8px] text-slate-500 italic">no ring</span>
             )}
           </button>
         </PopoverTrigger>
@@ -350,7 +354,7 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
       )}
 
       {/* Eggs */}
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-3 items-start pb-2">
         {clutch.eggs?.map((egg, index) => (
           <EggIcon
             key={egg.id}
