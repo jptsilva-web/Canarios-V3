@@ -83,10 +83,10 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     setGenerating(true);
     try {
       await zonesApi.generateCages(zone.id);
-      toast.success(`Generated ${zone.rows * zone.columns} cages`);
+      toast.success(`${zone.rows * zone.columns} ${t('messages.cagesGenerated')}`);
       onRefresh();
     } catch (error) {
-      toast.error('Failed to generate cages');
+      toast.error(t('messages.zoneLoadError'));
     } finally {
       setGenerating(false);
     }
@@ -254,7 +254,7 @@ export const Zones = () => {
       setClutches(clutchesRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
+      toast.error(t('messages.zoneLoadError'));
     } finally {
       setLoading(false);
     }
@@ -268,15 +268,15 @@ export const Zones = () => {
     e.preventDefault();
     try {
       const newZone = await zonesApi.create(formData);
-      toast.success('Zone created');
+      toast.success(t('messages.zoneCreated'));
       // Auto-generate cages
       await zonesApi.generateCages(newZone.data.id);
-      toast.success(`Generated ${formData.rows * formData.columns} cages`);
+      toast.success(`${formData.rows * formData.columns} ${t('messages.cagesGenerated')}`);
       setDialogOpen(false);
       setFormData({ name: '', rows: 4, columns: 4 });
       fetchData();
     } catch (error) {
-      toast.error('Failed to create zone');
+      toast.error(t('messages.zoneLoadError'));
     }
   };
 
@@ -284,11 +284,11 @@ export const Zones = () => {
     if (!deleteDialog) return;
     try {
       await zonesApi.delete(deleteDialog.id);
-      toast.success('Zone deleted');
+      toast.success(t('messages.zoneDeleted'));
       setDeleteDialog(null);
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete zone');
+      toast.error(t('messages.deleteError'));
     }
   };
 
@@ -296,10 +296,10 @@ export const Zones = () => {
     if (pair) {
       // Navigate to pairs page if cage has a pair
       navigate('/pairs');
-      toast.info(`Navigating to Pair: ${pair.name || 'Unnamed'}`);
+      toast.info(`${t('messages.navigatingToPair')}: ${pair.name || 'Unnamed'}`);
     } else {
       // Navigate to pairs page to create a new pair for this cage
-      toast.info(`Cage ${cage.label} is empty. Go to Pairs to assign a pair.`);
+      toast.info(`${cage.label} ${t('messages.cageEmpty')}`);
       navigate('/pairs');
     }
   };

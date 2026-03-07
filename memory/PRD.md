@@ -65,6 +65,8 @@ Build a canary breeding control/management web application with a local database
   - Print-optimized layout
 - ✅ **Auto-create newborn birds** - When eggs are banded, automatically creates bird record with parents linked
 - ✅ **Update newborn gender** - Can edit newborn to set gender once determined
+- ✅ **Complete translations** - All toast messages, form labels, table headers, and UI elements translated
+- ✅ **IIS Deployment Documentation** - Complete guide for deploying on Windows IIS with Reverse Proxy
 - ✅ Dark navy theme with custom accent colors
 - ✅ Mobile-responsive sidebar navigation
 
@@ -113,7 +115,7 @@ Build a canary breeding control/management web application with a local database
 
 ## Prioritized Backlog
 
-### P0 (Critical) - COMPLETED
+### P0 (Critical) - COMPLETED ✅
 - [x] All core features implemented
 - [x] Interactive egg status feature
 - [x] Email notification configuration
@@ -127,23 +129,25 @@ Build a canary breeding control/management web application with a local database
 - [x] Season/Year management
 - [x] Printable breeding cards
 - [x] Year-over-year comparison
+- [x] Complete all translations (toast messages, table headers, form labels)
+- [x] IIS deployment documentation
 
 ### P1 (High Priority)
 - [ ] Bird photo attachments
 - [ ] Advanced analytics dashboard
-- [ ] Complete all remaining hardcoded English text translations
 
 ### P2 (Medium Priority)
 - [ ] Multiple user support with authentication
 - [ ] Mobile app version
 - [ ] Data backup/restore functionality
-- [ ] IIS compatibility for local deployment
+
+## Documentation Files
+- `/app/docs/IIS_INSTALLATION_GUIDE.md` - Complete IIS deployment guide with Reverse Proxy configuration
+- `/app/frontend/public/web.config` - IIS configuration file for React SPA + API proxy
 
 ## Next Tasks
 1. Bird photo attachments
-2. Complete remaining English hardcoded text translations
-3. Consider multi-user authentication for shared aviaries
-4. IIS deployment documentation
+2. Consider multi-user authentication for shared aviaries
 
 ## Technical Notes
 - **Email Notifications**: Configured and working with Gmail App Password
@@ -151,6 +155,7 @@ Build a canary breeding control/management web application with a local database
 - **Exports**: Birds and breeding reports can be exported to CSV or PDF from the Reports page
 - **Seasons**: Data can be organized by breeding season/year
 - **Print Cards**: Generate print-friendly cards for cage identification
+- **IIS Deployment**: Full documentation available for Windows Server deployment
 
 ## Database Schema
 

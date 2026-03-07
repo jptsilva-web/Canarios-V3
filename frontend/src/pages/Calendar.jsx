@@ -145,7 +145,7 @@ export const CalendarPage = () => {
   // Create manual task
   const handleCreateTask = async () => {
     if (!newTask.title.trim()) {
-      toast.error('Please enter a task title');
+      toast.error(t('messages.taskTitleRequired'));
       return;
     }
 
@@ -157,15 +157,15 @@ export const CalendarPage = () => {
       });
       
       if (res.ok) {
-        toast.success('Task created');
+        toast.success(t('messages.taskCreated'));
         setDialogOpen(false);
         setNewTask({ title: '', description: '', due_date: '', task_type: 'manual' });
         fetchData();
       } else {
-        toast.error('Failed to create task');
+        toast.error(t('messages.taskError'));
       }
     } catch (error) {
-      toast.error('Failed to create task');
+      toast.error(t('messages.taskError'));
     }
   };
 
@@ -177,13 +177,13 @@ export const CalendarPage = () => {
       });
       
       if (res.ok) {
-        toast.success('Task deleted');
+        toast.success(t('messages.taskDeleted'));
         fetchData();
       } else {
-        toast.error('Failed to delete task');
+        toast.error(t('messages.taskError'));
       }
     } catch (error) {
-      toast.error('Failed to delete task');
+      toast.error(t('messages.taskError'));
     }
   };
 

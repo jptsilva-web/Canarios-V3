@@ -281,21 +281,21 @@ export const Birds = () => {
     
     // Validate required fields
     if (!formData.stam.trim()) {
-      toast.error('STAM is required');
+      toast.error(t('messages.stamRequired'));
       return;
     }
     if (!formData.class_id) {
-      toast.error('Class is required');
+      toast.error(t('messages.classRequired'));
       return;
     }
 
     try {
       if (editingBird) {
         await birdsApi.update(editingBird.id, formData);
-        toast.success('Bird updated');
+        toast.success(t('messages.birdUpdated'));
       } else {
         await birdsApi.create(formData);
-        toast.success('Bird added');
+        toast.success(t('messages.birdCreated'));
       }
       setDialogOpen(false);
       setEditingBird(null);
@@ -307,7 +307,7 @@ export const Birds = () => {
       if (error.response?.data?.detail?.includes('STAM')) {
         toast.error(error.response.data.detail);
       } else {
-        toast.error('Failed to save bird');
+        toast.error(t('messages.birdSaveError'));
       }
     }
   };
@@ -348,12 +348,12 @@ export const Birds = () => {
     if (!deleteDialog) return;
     try {
       await birdsApi.delete(deleteDialog.id);
-      toast.success('Bird deleted');
+      toast.success(t('messages.birdDeleted'));
       setDeleteDialog(null);
       fetchBirds();
       fetchSavedStams();
     } catch (error) {
-      toast.error('Failed to delete bird');
+      toast.error(t('messages.birdDeleteError'));
     }
   };
 
@@ -569,7 +569,7 @@ export const Birds = () => {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by band number, STAM, or class..."
+                placeholder={t('birds.searchPlaceholder')}
                 className="pl-10 bg-[#1A2035] border-white/10 text-white"
                 data-testid="search-input"
               />
@@ -580,13 +580,13 @@ export const Birds = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-[#202940] border-white/10">
-                <SelectItem value="all" className="text-white hover:bg-[#1A2035]">{t('genealogy.allBirds')}</SelectItem>
-                <SelectItem value="male" className="text-white hover:bg-[#1A2035]">{t('genealogy.malesOnly')}</SelectItem>
-                <SelectItem value="female" className="text-white hover:bg-[#1A2035]">{t('genealogy.femalesOnly')}</SelectItem>
+                <SelectItem value="all" className="text-white hover:bg-[#1A2035]">{t('birds.allBirds')}</SelectItem>
+                <SelectItem value="male" className="text-white hover:bg-[#1A2035]">{t('birds.malesOnly')}</SelectItem>
+                <SelectItem value="female" className="text-white hover:bg-[#1A2035]">{t('birds.femalesOnly')}</SelectItem>
                 <SelectItem value="unknown" className="text-white hover:bg-[#1A2035]">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#FFC300]" />
-                    Newborns (?)
+                    {t('birds.newbornsOnly')}
                   </span>
                 </SelectItem>
               </SelectContent>
@@ -600,15 +600,15 @@ export const Birds = () => {
         <Card className="bg-[#202940] border-white/5">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Bird className="w-16 h-16 text-slate-500 mb-4" />
-            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">No Birds Yet</h3>
+            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">{t('birds.noBirds')}</h3>
             <p className="text-slate-400 text-center max-w-md mb-6">
-              Start by adding your birds to the registry. You can then use them to create breeding pairs.
+              {t('birds.noBirds')}
             </p>
             <Button 
               onClick={() => setDialogOpen(true)}
               className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
             >
-              <Plus size={20} className="mr-2" /> Add Your First Bird
+              <Plus size={20} className="mr-2" /> {t('birds.addBird')}
             </Button>
           </CardContent>
         </Card>
@@ -618,13 +618,13 @@ export const Birds = () => {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/5 hover:bg-transparent">
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Band</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Gender</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">STAM</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Class</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Year</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Added</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase text-right">Actions</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.band')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.gender')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.stam')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.class')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.year')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.added')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

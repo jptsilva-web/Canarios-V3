@@ -72,11 +72,11 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
       }
       
       await clutchesApi.updateEgg(clutchId, egg.id, updateData);
-      toast.success(`Egg ${index + 1} marked as ${newStatus}`);
+      toast.success(t('messages.eggStatusUpdated'));
       setOpen(false);
       onUpdate();
     } catch (error) {
-      toast.error('Failed to update egg status');
+      toast.error(t('messages.eggError'));
     } finally {
       setUpdating(false);
     }
@@ -84,7 +84,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
 
   const handleBand = async () => {
     if (!bandNumber.trim()) {
-      toast.error('Please enter a band/ring number');
+      toast.error(t('messages.eggBandRequired'));
       return;
     }
     
@@ -95,11 +95,11 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
         band_number: bandNumber,
         banded_date: new Date().toISOString().split('T')[0],
       });
-      toast.success(`Egg ${index + 1} banded with ${bandNumber}`);
+      toast.success(t('messages.eggBanded'));
       setOpen(false);
       onUpdate();
     } catch (error) {
-      toast.error('Failed to band egg');
+      toast.error(t('messages.eggError'));
     } finally {
       setUpdating(false);
     }
@@ -280,10 +280,10 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
         status: 'incubating',
         incubation_start: today,
       });
-      toast.success('Incubation started');
+      toast.success(t('messages.incubationStarted'));
       onUpdate();
     } catch (error) {
-      toast.error('Failed to start incubation');
+      toast.error(t('messages.clutchError'));
     } finally {
       setUpdating(false);
     }
@@ -293,10 +293,10 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
     setUpdating(true);
     try {
       await clutchesApi.update(clutch.id, { status: 'hatching' });
-      toast.success('Marked as hatching');
+      toast.success(t('messages.hatchingMarked'));
       onUpdate();
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(t('messages.clutchError'));
     } finally {
       setUpdating(false);
     }
@@ -306,10 +306,10 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
     setUpdating(true);
     try {
       await clutchesApi.update(clutch.id, { status: 'completed' });
-      toast.success('Clutch completed');
+      toast.success(t('messages.clutchCompleted'));
       onUpdate();
     } catch (error) {
-      toast.error('Failed to complete clutch');
+      toast.error(t('messages.clutchError'));
     } finally {
       setUpdating(false);
     }
@@ -482,30 +482,30 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
   const handleAddClutch = async () => {
     try {
       await clutchesApi.create({ pair_id: pair.id });
-      toast.success('New clutch added');
+      toast.success(t('messages.clutchCreated'));
       fetchClutches();
     } catch (error) {
-      toast.error('Failed to add clutch');
+      toast.error(t('messages.clutchError'));
     }
   };
 
   const handleDeleteClutch = async (clutchId) => {
     try {
       await clutchesApi.delete(clutchId);
-      toast.success('Clutch deleted');
+      toast.success(t('messages.clutchDeleted'));
       fetchClutches();
     } catch (error) {
-      toast.error('Failed to delete clutch');
+      toast.error(t('messages.clutchError'));
     }
   };
 
   const handleAddEgg = async (clutchId) => {
     try {
       await clutchesApi.addEgg(clutchId, {});
-      toast.success('Egg added');
+      toast.success(t('messages.eggAdded'));
       fetchClutches();
     } catch (error) {
-      toast.error('Failed to add egg');
+      toast.error(t('messages.eggError'));
     }
   };
 
@@ -666,7 +666,7 @@ export const Pairs = () => {
       setZones(zonesRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
+      toast.error(t('messages.pairLoadError'));
     } finally {
       setLoading(false);
     }
@@ -681,17 +681,17 @@ export const Pairs = () => {
     try {
       if (editingPair) {
         await pairsApi.update(editingPair.id, formData);
-        toast.success('Pair updated');
+        toast.success(t('messages.pairUpdated'));
       } else {
         await pairsApi.create(formData);
-        toast.success('Pair created');
+        toast.success(t('messages.pairCreated'));
       }
       setDialogOpen(false);
       setEditingPair(null);
       setFormData({ name: '', cage_id: '', male_id: '', female_id: '', notes: '' });
       fetchData();
     } catch (error) {
-      toast.error('Failed to save pair');
+      toast.error(t('messages.pairSaveError'));
     }
   };
 
@@ -711,11 +711,11 @@ export const Pairs = () => {
     if (!deleteDialog) return;
     try {
       await pairsApi.delete(deleteDialog.id);
-      toast.success('Pair deleted');
+      toast.success(t('messages.pairDeleted'));
       setDeleteDialog(null);
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete pair');
+      toast.error(t('messages.pairDeleteError'));
     }
   };
 

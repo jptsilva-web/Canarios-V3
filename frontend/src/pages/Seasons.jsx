@@ -62,7 +62,7 @@ export const Seasons = () => {
       setSeasons(res.data);
     } catch (error) {
       console.error('Error fetching seasons:', error);
-      toast.error('Failed to load seasons');
+      toast.error(t('messages.seasonLoadError'));
     } finally {
       setLoading(false);
     }
@@ -85,17 +85,17 @@ export const Seasons = () => {
     try {
       if (editingSeason) {
         await seasonsApi.update(editingSeason.id, formData);
-        toast.success('Season updated');
+        toast.success(t('messages.seasonUpdated'));
       } else {
         await seasonsApi.create(formData);
-        toast.success('Season created');
+        toast.success(t('messages.seasonCreated'));
       }
       fetchSeasons();
       setDialogOpen(false);
       resetForm();
     } catch (error) {
       console.error('Error saving season:', error);
-      toast.error('Failed to save season');
+      toast.error(t('messages.seasonSaveError'));
     }
   };
 
@@ -116,10 +116,10 @@ export const Seasons = () => {
     if (!deleteDialog) return;
     try {
       await seasonsApi.delete(deleteDialog.id);
-      toast.success('Season deleted');
+      toast.success(t('messages.seasonDeleted'));
       fetchSeasons();
     } catch (error) {
-      toast.error('Failed to delete season');
+      toast.error(t('messages.seasonDeleteError'));
     } finally {
       setDeleteDialog(null);
     }
@@ -128,10 +128,10 @@ export const Seasons = () => {
   const handleActivate = async (season) => {
     try {
       await seasonsApi.activate(season.id);
-      toast.success(`Season ${season.name} is now active`);
+      toast.success(t('messages.seasonActivated'));
       fetchSeasons();
     } catch (error) {
-      toast.error('Failed to activate season');
+      toast.error(t('messages.seasonActivateError'));
     }
   };
 

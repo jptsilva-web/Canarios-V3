@@ -43,6 +43,94 @@ export const translations = {
       active: 'Ativo',
       completed: 'Concluído',
       export: 'Exportar',
+      unknown: 'Desconhecido',
+      year: 'Ano',
+      update: 'Atualizar',
+      create: 'Criar',
+    },
+    // Messages (Toast notifications)
+    messages: {
+      // Success messages
+      saved: 'Guardado com sucesso',
+      created: 'Criado com sucesso',
+      updated: 'Atualizado com sucesso',
+      deleted: 'Eliminado com sucesso',
+      // Error messages
+      loadError: 'Erro ao carregar dados',
+      saveError: 'Erro ao guardar',
+      deleteError: 'Erro ao eliminar',
+      // Seasons
+      seasonCreated: 'Temporada criada',
+      seasonUpdated: 'Temporada atualizada',
+      seasonDeleted: 'Temporada eliminada',
+      seasonActivated: 'Temporada ativada',
+      seasonLoadError: 'Erro ao carregar temporadas',
+      seasonSaveError: 'Erro ao guardar temporada',
+      seasonDeleteError: 'Erro ao eliminar temporada',
+      seasonActivateError: 'Erro ao ativar temporada',
+      // Birds
+      birdCreated: 'Pássaro adicionado',
+      birdUpdated: 'Pássaro atualizado',
+      birdDeleted: 'Pássaro eliminado',
+      birdLoadError: 'Erro ao carregar pássaros',
+      birdSaveError: 'Erro ao guardar pássaro',
+      birdDeleteError: 'Erro ao eliminar pássaro',
+      stamRequired: 'STAM é obrigatório',
+      classRequired: 'Classe é obrigatória',
+      // Pairs
+      pairCreated: 'Casal criado',
+      pairUpdated: 'Casal atualizado',
+      pairDeleted: 'Casal eliminado',
+      pairLoadError: 'Erro ao carregar casais',
+      pairSaveError: 'Erro ao guardar casal',
+      pairDeleteError: 'Erro ao eliminar casal',
+      // Clutches
+      clutchCreated: 'Postura adicionada',
+      clutchDeleted: 'Postura eliminada',
+      clutchCompleted: 'Postura concluída',
+      clutchError: 'Erro na postura',
+      incubationStarted: 'Incubação iniciada',
+      hatchingMarked: 'Marcado como eclosão',
+      // Eggs
+      eggAdded: 'Ovo adicionado',
+      eggStatusUpdated: 'Estado do ovo atualizado',
+      eggBanded: 'Ovo anilhado',
+      eggBandRequired: 'Por favor insira um número de anilha',
+      eggError: 'Erro ao atualizar ovo',
+      // Zones
+      zoneCreated: 'Zona criada',
+      zoneDeleted: 'Zona eliminada',
+      cagesGenerated: 'gaiolas geradas',
+      zoneLoadError: 'Erro ao carregar zonas',
+      cageEmpty: 'está vazia. Vá a Casais para atribuir um casal.',
+      navigatingToPair: 'A navegar para Casal',
+      // Contacts
+      contactCreated: 'Contacto adicionado',
+      contactUpdated: 'Contacto atualizado',
+      contactDeleted: 'Contacto eliminado',
+      contactLoadError: 'Erro ao carregar contactos',
+      contactSaveError: 'Erro ao guardar contacto',
+      contactDeleteError: 'Erro ao eliminar contacto',
+      // Calendar/Tasks
+      taskCreated: 'Tarefa criada',
+      taskDeleted: 'Tarefa eliminada',
+      taskTitleRequired: 'Por favor insira um título para a tarefa',
+      taskError: 'Erro na tarefa',
+      // Settings
+      breedingSettingsSaved: 'Definições de criação guardadas',
+      emailSettingsSaved: 'Definições de email guardadas',
+      settingsError: 'Erro ao guardar definições',
+      emailRequired: 'Por favor insira um email de notificação primeiro',
+      testEmailSent: 'Email de teste enviado! Verifique a sua caixa de entrada.',
+      testEmailError: 'Erro ao enviar email de teste',
+      settingsReset: 'Definições de criação repostas para valores padrão',
+      // Reports
+      statsLoadError: 'Erro ao carregar estatísticas',
+      exportStarted: 'A exportar',
+      // Print Cards
+      printCardsLoadError: 'Erro ao carregar cartões de criação',
+      // Genealogy
+      genealogyLoadError: 'Erro ao carregar genealogia',
     },
     // Dashboard
     dashboard: {
@@ -78,6 +166,14 @@ export const translations = {
       noBirds: 'Nenhum pássaro registado',
       males: 'machos',
       females: 'fêmeas',
+      // Table headers
+      band: 'ANILHA',
+      year: 'ANO',
+      added: 'ADICIONADO',
+      allBirds: 'Todos os Pássaros',
+      malesOnly: 'Apenas Machos',
+      femalesOnly: 'Apenas Fêmeas',
+      newbornsOnly: 'Apenas Recém-nascidos',
     },
     // Pairs
     pairs: {
@@ -339,6 +435,94 @@ export const translations = {
       active: 'Active',
       completed: 'Completed',
       export: 'Export',
+      unknown: 'Unknown',
+      year: 'Year',
+      update: 'Update',
+      create: 'Create',
+    },
+    // Messages (Toast notifications)
+    messages: {
+      // Success messages
+      saved: 'Saved successfully',
+      created: 'Created successfully',
+      updated: 'Updated successfully',
+      deleted: 'Deleted successfully',
+      // Error messages
+      loadError: 'Failed to load data',
+      saveError: 'Failed to save',
+      deleteError: 'Failed to delete',
+      // Seasons
+      seasonCreated: 'Season created',
+      seasonUpdated: 'Season updated',
+      seasonDeleted: 'Season deleted',
+      seasonActivated: 'Season activated',
+      seasonLoadError: 'Failed to load seasons',
+      seasonSaveError: 'Failed to save season',
+      seasonDeleteError: 'Failed to delete season',
+      seasonActivateError: 'Failed to activate season',
+      // Birds
+      birdCreated: 'Bird added',
+      birdUpdated: 'Bird updated',
+      birdDeleted: 'Bird deleted',
+      birdLoadError: 'Failed to load birds',
+      birdSaveError: 'Failed to save bird',
+      birdDeleteError: 'Failed to delete bird',
+      stamRequired: 'STAM is required',
+      classRequired: 'Class is required',
+      // Pairs
+      pairCreated: 'Pair created',
+      pairUpdated: 'Pair updated',
+      pairDeleted: 'Pair deleted',
+      pairLoadError: 'Failed to load pairs',
+      pairSaveError: 'Failed to save pair',
+      pairDeleteError: 'Failed to delete pair',
+      // Clutches
+      clutchCreated: 'New clutch added',
+      clutchDeleted: 'Clutch deleted',
+      clutchCompleted: 'Clutch completed',
+      clutchError: 'Failed to update clutch',
+      incubationStarted: 'Incubation started',
+      hatchingMarked: 'Marked as hatching',
+      // Eggs
+      eggAdded: 'Egg added',
+      eggStatusUpdated: 'Egg status updated',
+      eggBanded: 'Egg banded',
+      eggBandRequired: 'Please enter a band/ring number',
+      eggError: 'Failed to update egg',
+      // Zones
+      zoneCreated: 'Zone created',
+      zoneDeleted: 'Zone deleted',
+      cagesGenerated: 'cages generated',
+      zoneLoadError: 'Failed to load zones',
+      cageEmpty: 'is empty. Go to Pairs to assign a pair.',
+      navigatingToPair: 'Navigating to Pair',
+      // Contacts
+      contactCreated: 'Contact added',
+      contactUpdated: 'Contact updated',
+      contactDeleted: 'Contact deleted',
+      contactLoadError: 'Failed to load contacts',
+      contactSaveError: 'Failed to save contact',
+      contactDeleteError: 'Failed to delete contact',
+      // Calendar/Tasks
+      taskCreated: 'Task created',
+      taskDeleted: 'Task deleted',
+      taskTitleRequired: 'Please enter a task title',
+      taskError: 'Failed to process task',
+      // Settings
+      breedingSettingsSaved: 'Breeding settings saved',
+      emailSettingsSaved: 'Email settings saved',
+      settingsError: 'Failed to save settings',
+      emailRequired: 'Please enter a notification email first',
+      testEmailSent: 'Test email sent! Check your inbox.',
+      testEmailError: 'Failed to send test email',
+      settingsReset: 'Breeding settings reset to defaults',
+      // Reports
+      statsLoadError: 'Failed to load statistics',
+      exportStarted: 'Exporting',
+      // Print Cards
+      printCardsLoadError: 'Failed to load breeding cards',
+      // Genealogy
+      genealogyLoadError: 'Failed to load genealogy',
     },
     // Dashboard
     dashboard: {
@@ -374,6 +558,14 @@ export const translations = {
       noBirds: 'No birds registered',
       males: 'males',
       females: 'females',
+      // Table headers
+      band: 'BAND',
+      year: 'YEAR',
+      added: 'ADDED',
+      allBirds: 'All Birds',
+      malesOnly: 'Males Only',
+      femalesOnly: 'Females Only',
+      newbornsOnly: 'Newborns Only',
     },
     // Pairs
     pairs: {
@@ -635,6 +827,94 @@ export const translations = {
       active: 'Activo',
       completed: 'Completado',
       export: 'Exportar',
+      unknown: 'Desconocido',
+      year: 'Año',
+      update: 'Actualizar',
+      create: 'Crear',
+    },
+    // Messages (Toast notifications)
+    messages: {
+      // Success messages
+      saved: 'Guardado con éxito',
+      created: 'Creado con éxito',
+      updated: 'Actualizado con éxito',
+      deleted: 'Eliminado con éxito',
+      // Error messages
+      loadError: 'Error al cargar datos',
+      saveError: 'Error al guardar',
+      deleteError: 'Error al eliminar',
+      // Seasons
+      seasonCreated: 'Temporada creada',
+      seasonUpdated: 'Temporada actualizada',
+      seasonDeleted: 'Temporada eliminada',
+      seasonActivated: 'Temporada activada',
+      seasonLoadError: 'Error al cargar temporadas',
+      seasonSaveError: 'Error al guardar temporada',
+      seasonDeleteError: 'Error al eliminar temporada',
+      seasonActivateError: 'Error al activar temporada',
+      // Birds
+      birdCreated: 'Pájaro añadido',
+      birdUpdated: 'Pájaro actualizado',
+      birdDeleted: 'Pájaro eliminado',
+      birdLoadError: 'Error al cargar pájaros',
+      birdSaveError: 'Error al guardar pájaro',
+      birdDeleteError: 'Error al eliminar pájaro',
+      stamRequired: 'STAM es obligatorio',
+      classRequired: 'Clase es obligatoria',
+      // Pairs
+      pairCreated: 'Pareja creada',
+      pairUpdated: 'Pareja actualizada',
+      pairDeleted: 'Pareja eliminada',
+      pairLoadError: 'Error al cargar parejas',
+      pairSaveError: 'Error al guardar pareja',
+      pairDeleteError: 'Error al eliminar pareja',
+      // Clutches
+      clutchCreated: 'Nueva puesta añadida',
+      clutchDeleted: 'Puesta eliminada',
+      clutchCompleted: 'Puesta completada',
+      clutchError: 'Error en la puesta',
+      incubationStarted: 'Incubación iniciada',
+      hatchingMarked: 'Marcado como eclosión',
+      // Eggs
+      eggAdded: 'Huevo añadido',
+      eggStatusUpdated: 'Estado del huevo actualizado',
+      eggBanded: 'Huevo anillado',
+      eggBandRequired: 'Por favor introduce un número de anilla',
+      eggError: 'Error al actualizar huevo',
+      // Zones
+      zoneCreated: 'Zona creada',
+      zoneDeleted: 'Zona eliminada',
+      cagesGenerated: 'jaulas generadas',
+      zoneLoadError: 'Error al cargar zonas',
+      cageEmpty: 'está vacía. Ve a Parejas para asignar una pareja.',
+      navigatingToPair: 'Navegando a Pareja',
+      // Contacts
+      contactCreated: 'Contacto añadido',
+      contactUpdated: 'Contacto actualizado',
+      contactDeleted: 'Contacto eliminado',
+      contactLoadError: 'Error al cargar contactos',
+      contactSaveError: 'Error al guardar contacto',
+      contactDeleteError: 'Error al eliminar contacto',
+      // Calendar/Tasks
+      taskCreated: 'Tarea creada',
+      taskDeleted: 'Tarea eliminada',
+      taskTitleRequired: 'Por favor introduce un título para la tarea',
+      taskError: 'Error en la tarea',
+      // Settings
+      breedingSettingsSaved: 'Configuración de cría guardada',
+      emailSettingsSaved: 'Configuración de email guardada',
+      settingsError: 'Error al guardar configuración',
+      emailRequired: 'Por favor introduce un email de notificación primero',
+      testEmailSent: '¡Email de prueba enviado! Revisa tu bandeja de entrada.',
+      testEmailError: 'Error al enviar email de prueba',
+      settingsReset: 'Configuración de cría restablecida a valores predeterminados',
+      // Reports
+      statsLoadError: 'Error al cargar estadísticas',
+      exportStarted: 'Exportando',
+      // Print Cards
+      printCardsLoadError: 'Error al cargar tarjetas de cría',
+      // Genealogy
+      genealogyLoadError: 'Error al cargar genealogía',
     },
     // Dashboard
     dashboard: {
@@ -670,6 +950,14 @@ export const translations = {
       noBirds: 'Ningún pájaro registrado',
       males: 'machos',
       females: 'hembras',
+      // Table headers
+      band: 'ANILLA',
+      year: 'AÑO',
+      added: 'AÑADIDO',
+      allBirds: 'Todos los Pájaros',
+      malesOnly: 'Solo Machos',
+      femalesOnly: 'Solo Hembras',
+      newbornsOnly: 'Solo Recién Nacidos',
     },
     // Pairs
     pairs: {

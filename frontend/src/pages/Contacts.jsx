@@ -115,7 +115,7 @@ export const Contacts = () => {
       setContacts(res.data);
     } catch (error) {
       console.error('Error fetching contacts:', error);
-      toast.error('Failed to load contacts');
+      toast.error(t('messages.contactLoadError'));
     } finally {
       setLoading(false);
     }
@@ -141,17 +141,17 @@ export const Contacts = () => {
     try {
       if (editingContact) {
         await contactsApi.update(editingContact.id, formData);
-        toast.success('Contact updated');
+        toast.success(t('messages.contactUpdated'));
       } else {
         await contactsApi.create(formData);
-        toast.success('Contact added');
+        toast.success(t('messages.contactCreated'));
       }
       setDialogOpen(false);
       setEditingContact(null);
       resetForm();
       fetchContacts();
     } catch (error) {
-      toast.error('Failed to save contact');
+      toast.error(t('messages.contactSaveError'));
     }
   };
 
@@ -172,11 +172,11 @@ export const Contacts = () => {
     if (!deleteDialog) return;
     try {
       await contactsApi.delete(deleteDialog.id);
-      toast.success('Contact deleted');
+      toast.success(t('messages.contactDeleted'));
       setDeleteDialog(null);
       fetchContacts();
     } catch (error) {
-      toast.error('Failed to delete contact');
+      toast.error(t('messages.contactDeleteError'));
     }
   };
 

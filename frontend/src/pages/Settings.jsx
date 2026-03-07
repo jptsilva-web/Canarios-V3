@@ -81,12 +81,12 @@ export const Settings = () => {
         body: JSON.stringify(breedingSettings),
       });
       if (res.ok) {
-        toast.success('Breeding settings saved');
+        toast.success(t('messages.breedingSettingsSaved'));
       } else {
-        toast.error('Failed to save breeding settings');
+        toast.error(t('messages.settingsError'));
       }
     } catch (error) {
-      toast.error('Failed to save breeding settings');
+      toast.error(t('messages.settingsError'));
     } finally {
       setSaving(false);
     }
@@ -101,12 +101,12 @@ export const Settings = () => {
         body: JSON.stringify(emailSettings),
       });
       if (res.ok) {
-        toast.success('Email settings saved');
+        toast.success(t('messages.emailSettingsSaved'));
       } else {
-        toast.error('Failed to save email settings');
+        toast.error(t('messages.settingsError'));
       }
     } catch (error) {
-      toast.error('Failed to save email settings');
+      toast.error(t('messages.settingsError'));
     } finally {
       setSaving(false);
     }
@@ -114,7 +114,7 @@ export const Settings = () => {
 
   const handleTestEmail = async () => {
     if (!emailSettings.notification_email) {
-      toast.error('Please enter a notification email first');
+      toast.error(t('messages.emailRequired'));
       return;
     }
     
@@ -127,13 +127,13 @@ export const Settings = () => {
         method: 'POST',
       });
       if (res.ok) {
-        toast.success('Test email sent! Check your inbox.');
+        toast.success(t('messages.testEmailSent'));
       } else {
         const data = await res.json();
-        toast.error(data.detail || 'Failed to send test email');
+        toast.error(data.detail || t('messages.testEmailError'));
       }
     } catch (error) {
-      toast.error('Failed to send test email');
+      toast.error(t('messages.testEmailError'));
     } finally {
       setTestingEmail(false);
     }
@@ -141,7 +141,7 @@ export const Settings = () => {
 
   const handleReset = () => {
     setBreedingSettings(DEFAULT_BREEDING);
-    toast.info('Breeding settings reset to defaults');
+    toast.info(t('messages.settingsReset'));
   };
 
   if (loading) {
