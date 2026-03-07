@@ -7,6 +7,7 @@ import {
   Grid3X3,
   ListTodo,
   Calendar,
+  Baby,
   Users,
   Settings,
   Menu,
@@ -23,6 +24,7 @@ const navItems = [
   { path: '/pairs', icon: Heart, label: 'Pairs' },
   { path: '/tasks', icon: ListTodo, label: 'Tasks' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
+  { path: '/newborn', icon: Baby, label: 'Newborn' },
   { path: '/contacts', icon: Users, label: 'Contacts' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];

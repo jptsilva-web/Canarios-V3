@@ -7,6 +7,7 @@ import { Birds } from "./pages/Birds";
 import { Zones } from "./pages/Zones";
 import { Tasks } from "./pages/Tasks";
 import { CalendarPage } from "./pages/Calendar";
+import { Newborn } from "./pages/Newborn";
 import { Contacts } from "./pages/Contacts";
 import { Settings } from "./pages/Settings";
 
@@ -21,6 +22,7 @@ function App() {
           <Route path="/zones" element={<Zones />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/newborn" element={<Newborn />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
