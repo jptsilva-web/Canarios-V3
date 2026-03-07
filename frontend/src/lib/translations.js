@@ -198,7 +198,7 @@ export const translations = {
         fresh: 'Fresco',
         fertile: 'Fértil',
         infertile: 'Infértil',
-        hatched: 'Eclodido',
+        hatched: 'Nascido',
         dead: 'Morto',
       },
       clutchStatus: {
