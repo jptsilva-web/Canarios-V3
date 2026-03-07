@@ -1,7 +1,7 @@
 # Canary Breeding Control - PRD
 
 ## Original Problem Statement
-Build a canary breeding control/management web application with a local database, similar to "Orniplus" app. Features include: configuring aviaries/cages in zones/modules, managing breeding pairs, tracking egg-laying and incubation, managing hatching and banding schedules, viewing tasks, contact management, and calendar functionality.
+Build a canary breeding control/management web application with a local database, similar to "Orniplus" app. Features include: configuring aviaries/cages in zones/modules, managing breeding pairs, tracking egg-laying and incubation, managing hatching and banding schedules, viewing tasks, contact management, calendar functionality, season management, printable breeding cards, and multi-language support.
 
 ## Architecture
 - **Frontend**: React 19 + Tailwind CSS + Shadcn/UI components
@@ -23,8 +23,11 @@ Build a canary breeding control/management web application with a local database
 - Task dashboard with urgency grouping
 - Calendar view for breeding schedule
 - Contact directory for other breeders
+- Season/Year management for multi-year breeding
+- Printable breeding cards
+- Multi-language support (Portuguese, English, Spanish)
 
-## What's Been Implemented (March 2026)
+## What's Been Implemented (December 2025)
 - ✅ Full-stack application with React + FastAPI + MongoDB
 - ✅ Dashboard with stats cards and task preview
 - ✅ Bird registry with CRUD, search, gender filter, and **parent selection for genealogy**
@@ -46,17 +49,27 @@ Build a canary breeding control/management web application with a local database
   - **Quick stats** - Shows total birds count with male/female breakdown
 - ✅ **Breeding Reports** - Statistics with fertility rate, hatch rate, egg breakdown, clutch summary
   - **Monthly trends chart** - Visual bar chart showing eggs, hatched, and rates over time
+  - **Year-over-Year Comparison** - Compare statistics between two years with color-coded changes
 - ✅ **Data Export** - Export birds and breeding reports to CSV/PDF
 - ✅ **Multi-language Support** - 3 languages with flag selector:
   - 🇵🇹 Português (Portugal) - Full translation
   - 🇬🇧 English
   - 🇪🇸 Español
+- ✅ **Season/Year Management** - Create and manage breeding seasons
+  - Create seasons with year, name, start/end dates
+  - Activate/deactivate seasons
+  - Quick add buttons for years
+- ✅ **Printable Breeding Cards** - Generate print-friendly cards for active pairs
+  - Shows male/female info (band number, STAM, year)
+  - Displays eggs and hatched counts
+  - Print-optimized layout
 - ✅ **Auto-create newborn birds** - When eggs are banded, automatically creates bird record with parents linked
 - ✅ **Update newborn gender** - Can edit newborn to set gender once determined
 - ✅ Dark navy theme with custom accent colors
 - ✅ Mobile-responsive sidebar navigation
 
 ## API Endpoints
+### Core APIs
 - `/api/zones` - CRUD for aviary zones
 - `/api/zones/{id}/generate-cages` - Auto-generate cage grid
 - `/api/cages` - Cage management
@@ -68,11 +81,30 @@ Build a canary breeding control/management web application with a local database
 - `/api/contacts` - Breeder contacts CRUD
 - `/api/dashboard/stats` - Dashboard statistics
 - `/api/dashboard/tasks` - Task list
+
+### Season Management APIs
+- `GET /api/seasons` - List all seasons
+- `POST /api/seasons` - Create new season
+- `PUT /api/seasons/{id}` - Update season
+- `DELETE /api/seasons/{id}` - Delete season
+- `GET /api/seasons/active` - Get currently active season
+- `POST /api/seasons/{id}/activate` - Activate a season
+
+### Reports APIs
 - `/api/reports/breeding-stats` - Comprehensive breeding statistics
+- `/api/reports/breeding-trends` - Monthly breeding trends
+- `/api/reports/year-comparison` - Year-over-year comparison (query params: year1, year2)
+
+### Print APIs
+- `/api/print/breeding-cards` - Get data for printable breeding cards
+
+### Export APIs
 - `/api/export/birds/csv` - Export birds to CSV
 - `/api/export/birds/pdf` - Export birds to PDF
 - `/api/export/breeding-report/csv` - Export breeding report to CSV
 - `/api/export/breeding-report/pdf` - Export breeding report to PDF
+
+### Settings APIs
 - `/api/settings` - Get all settings (breeding & email)
 - `/api/settings/breeding` - Save breeding cycle configuration
 - `/api/settings/email` - Save email notification settings
@@ -80,36 +112,123 @@ Build a canary breeding control/management web application with a local database
 - `/api/manual-tasks` - Manual task management (CRUD)
 
 ## Prioritized Backlog
-### P0 (Critical)
-- [Done] All core features implemented
-- [Done] Interactive egg status feature
-- [Done] Email notification configuration
-- [Done] Bird genealogy/family tree visualization
-- [Done] Breeding statistics and reports
-- [Done] Data export (CSV/PDF)
-- [Done] Search functionality in genealogy page
-- [Done] Multi-language support (PT/EN/ES)
-- [Done] Monthly breeding trends chart
-- [Done] Update newborn's gender
+
+### P0 (Critical) - COMPLETED
+- [x] All core features implemented
+- [x] Interactive egg status feature
+- [x] Email notification configuration
+- [x] Bird genealogy/family tree visualization
+- [x] Breeding statistics and reports
+- [x] Data export (CSV/PDF)
+- [x] Search functionality in genealogy page
+- [x] Multi-language support (PT/EN/ES)
+- [x] Monthly breeding trends chart
+- [x] Update newborn's gender
+- [x] Season/Year management
+- [x] Printable breeding cards
+- [x] Year-over-year comparison
 
 ### P1 (High Priority)
-- Bird photo attachments
-- Advanced analytics dashboard
-- Print breeding cards/labels
+- [ ] Bird photo attachments
+- [ ] Advanced analytics dashboard
+- [ ] Complete all remaining hardcoded English text translations
 
 ### P2 (Medium Priority)
-- Multiple user support with authentication
-- Breeding performance year-over-year comparison
-- Mobile app version
-- Data backup/restore functionality
+- [ ] Multiple user support with authentication
+- [ ] Mobile app version
+- [ ] Data backup/restore functionality
+- [ ] IIS compatibility for local deployment
 
 ## Next Tasks
-1. Add bird photo attachments
-2. Create printable breeding cards
-3. Add year-over-year comparison in reports
-4. Consider multi-user authentication for shared aviaries
+1. Bird photo attachments
+2. Complete remaining English hardcoded text translations
+3. Consider multi-user authentication for shared aviaries
+4. IIS deployment documentation
 
-## Notes
+## Technical Notes
 - **Email Notifications**: Configured and working with Gmail App Password
 - **Genealogy**: Birds can now have parents assigned, enabling family tree visualization
 - **Exports**: Birds and breeding reports can be exported to CSV or PDF from the Reports page
+- **Seasons**: Data can be organized by breeding season/year
+- **Print Cards**: Generate print-friendly cards for cage identification
+
+## Database Schema
+
+### seasons
+```json
+{
+  "id": "uuid",
+  "year": 2025,
+  "name": "Breeding Season 2025",
+  "start_date": "2025-01-01",
+  "end_date": "2025-12-31",
+  "is_active": true,
+  "notes": "string",
+  "created_at": "datetime"
+}
+```
+
+### birds
+```json
+{
+  "id": "uuid",
+  "band_number": "string",
+  "band_year": 2025,
+  "gender": "male|female|unknown",
+  "species": "Canary",
+  "stam": "string",
+  "class_id": "string",
+  "parent_male_id": "uuid",
+  "parent_female_id": "uuid",
+  "birth_date": "date",
+  "notes": "string",
+  "created_at": "datetime"
+}
+```
+
+### pairs
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "cage_id": "uuid",
+  "male_id": "uuid",
+  "female_id": "uuid",
+  "paired_date": "date",
+  "is_active": true,
+  "season_id": "uuid",
+  "notes": "string",
+  "created_at": "datetime"
+}
+```
+
+### clutches
+```json
+{
+  "id": "uuid",
+  "pair_id": "uuid",
+  "start_date": "date",
+  "status": "laying|incubating|hatching|weaning|completed",
+  "incubation_start": "date",
+  "expected_hatch_date": "date",
+  "expected_band_date": "date",
+  "expected_wean_date": "date",
+  "eggs": [
+    {
+      "id": "uuid",
+      "laid_date": "date",
+      "status": "fresh|fertile|infertile|hatched|dead",
+      "hatched_date": "date",
+      "band_number": "string",
+      "banded_date": "date"
+    }
+  ],
+  "notes": "string",
+  "created_at": "datetime"
+}
+```
+
+## Test Reports
+- `/app/test_reports/iteration_1.json`
+- `/app/test_reports/iteration_2.json`
+- `/app/test_reports/iteration_4.json` - Season Management, Print Cards, Year Comparison tests (100% passed)
