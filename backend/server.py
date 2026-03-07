@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Query, BackgroundTasks
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -10,6 +10,9 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
+import aiosmtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -18,6 +21,12 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Email configuration
+SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+SMTP_EMAIL = os.environ.get('SMTP_EMAIL', '')
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 
 # Create the main app
 app = FastAPI(title="Canary Breeding Control API")
@@ -220,22 +229,140 @@ class BreedingSettings(BaseModel):
     days_separator: int = 21
     days_weaning: int = 35
 
+class EmailSettings(BaseModel):
+    notification_email: str = ""
+    email_enabled: bool = False
+
+# Manual Task Model
+class ManualTask(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    due_date: str
+    task_type: str = "manual"
+    completed: bool = False
+    email_sent: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ManualTaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    due_date: str
+    task_type: str = "manual"
+
+# Email sending function
+async def send_email_notification(to_email: str, subject: str, body: str):
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logging.warning("Email not configured")
+        return False
+    
+    try:
+        message = MIMEMultipart()
+        message["From"] = SMTP_EMAIL
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.attach(MIMEText(body, "html"))
+        
+        await aiosmtplib.send(
+            message,
+            hostname=SMTP_HOST,
+            port=SMTP_PORT,
+            start_tls=True,
+            username=SMTP_EMAIL,
+            password=SMTP_PASSWORD,
+        )
+        logging.info(f"Email sent to {to_email}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send email: {e}")
+        return False
+
 # ============ SETTINGS API ============
 @api_router.get("/settings")
 async def get_settings():
-    settings = await db.settings.find_one({"type": "breeding"}, {"_id": 0})
-    if not settings:
-        return BreedingSettings().model_dump()
-    return settings
+    breeding = await db.settings.find_one({"type": "breeding"}, {"_id": 0})
+    email = await db.settings.find_one({"type": "email"}, {"_id": 0})
+    return {
+        "breeding": breeding or BreedingSettings().model_dump(),
+        "email": email or EmailSettings().model_dump()
+    }
 
-@api_router.post("/settings")
-async def save_settings(input: BreedingSettings):
+@api_router.post("/settings/breeding")
+async def save_breeding_settings(input: BreedingSettings):
     await db.settings.update_one(
         {"type": "breeding"},
         {"$set": {**input.model_dump(), "type": "breeding"}},
         upsert=True
     )
-    return {"message": "Settings saved"}
+    return {"message": "Breeding settings saved"}
+
+@api_router.post("/settings/email")
+async def save_email_settings(input: EmailSettings):
+    await db.settings.update_one(
+        {"type": "email"},
+        {"$set": {**input.model_dump(), "type": "email"}},
+        upsert=True
+    )
+    return {"message": "Email settings saved"}
+
+@api_router.post("/settings/test-email")
+async def test_email():
+    email_settings = await db.settings.find_one({"type": "email"}, {"_id": 0})
+    if not email_settings or not email_settings.get("notification_email"):
+        raise HTTPException(status_code=400, detail="No notification email configured")
+    
+    success = await send_email_notification(
+        email_settings["notification_email"],
+        "🐤 Canary Control - Test Email",
+        "<h2>Test Email</h2><p>Your email notifications are working correctly!</p>"
+    )
+    
+    if success:
+        return {"message": "Test email sent successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send test email")
+
+# ============ MANUAL TASKS API ============
+@api_router.post("/manual-tasks", response_model=ManualTask)
+async def create_manual_task(input: ManualTaskCreate, background_tasks: BackgroundTasks):
+    task = ManualTask(**input.model_dump())
+    doc = task.model_dump()
+    await db.manual_tasks.insert_one(doc)
+    
+    # Send email notification if enabled
+    email_settings = await db.settings.find_one({"type": "email"}, {"_id": 0})
+    if email_settings and email_settings.get("email_enabled") and email_settings.get("notification_email"):
+        background_tasks.add_task(
+            send_email_notification,
+            email_settings["notification_email"],
+            f"🐤 New Task: {task.title}",
+            f"<h2>New Task Created</h2><p><strong>{task.title}</strong></p><p>{task.description or 'No description'}</p><p>Due: {task.due_date}</p>"
+        )
+    
+    return task
+
+@api_router.get("/manual-tasks", response_model=List[ManualTask])
+async def get_manual_tasks():
+    tasks = await db.manual_tasks.find({}, {"_id": 0}).to_list(1000)
+    return tasks
+
+@api_router.delete("/manual-tasks/{task_id}")
+async def delete_manual_task(task_id: str):
+    result = await db.manual_tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"message": "Task deleted"}
+
+@api_router.put("/manual-tasks/{task_id}/complete")
+async def complete_manual_task(task_id: str):
+    result = await db.manual_tasks.update_one(
+        {"id": task_id},
+        {"$set": {"completed": True}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"message": "Task completed"}
 
 # ============ ZONES API ============
 @api_router.post("/zones", response_model=Zone)
