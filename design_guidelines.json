@@ -1,0 +1,162 @@
+{
+  "identity": {
+    "persona": "E1",
+    "description": "Creative Designer producing top 1% designs. Fusion of disciplines, emotion-first, content-directed.",
+    "principles": [
+      "Fusion over Imitation",
+      "Emotion First",
+      "Content is King",
+      "Zoom In",
+      "Negative Space",
+      "Contrast"
+    ]
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Barlow Condensed, sans-serif",
+      "weights": ["600", "700", "900"],
+      "usage": "All section headers, dashboard metrics, widget titles. Must be uppercase for tracking-widest labels.",
+      "letter_spacing": "tracking-tight for large text, tracking-widest for overlines"
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Data tables, form inputs, paragraphs, tooltips.",
+      "letter_spacing": "tracking-normal"
+    },
+    "mono": {
+      "font_family": "JetBrains Mono, monospace",
+      "usage": "Bird Ring/Band Numbers, Dates, IDs"
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "default": "#1A2035",
+        "card": "#202940",
+        "overlay": "rgba(26, 32, 53, 0.8)"
+      },
+      "primary": {
+        "default": "#FFC300",
+        "foreground": "#1A2035",
+        "description": "Amber/Yellow - Main Actions, Active States, 'Egg' Status"
+      },
+      "secondary": {
+        "default": "#00BFA6",
+        "foreground": "#FFFFFF",
+        "description": "Teal - Success, 'Hatched', 'Banded', Safe Status"
+      },
+      "destructive": {
+        "default": "#E91E63",
+        "foreground": "#FFFFFF",
+        "description": "Pink - Critical Alerts, 'Female' Gender Marker, Deletions"
+      },
+      "warning": {
+        "default": "#FF9800",
+        "foreground": "#FFFFFF",
+        "description": "Orange - 'Incubation', 'Weaning', Attention Needed"
+      },
+      "neutral": {
+        "100": "#FFFFFF",
+        "200": "#E2E8F0",
+        "500": "#94A3B8",
+        "800": "#1E293B",
+        "900": "#0F172A"
+      }
+    },
+    "semantic_mapping": {
+      "breeding_stages": {
+        "pairing": "#1A2035",
+        "laying": "#FFC300",
+        "incubation": "#FF9800",
+        "hatching": "#00BFA6",
+        "weaning": "#E91E63"
+      }
+    }
+  },
+  "layout_strategies": {
+    "dashboard": {
+      "type": "Bento Grid",
+      "columns": 12,
+      "gap": "gap-6",
+      "widgets": {
+        "hero": "col-span-12 md:col-span-8 row-span-2",
+        "stats": "col-span-6 md:col-span-2 row-span-1",
+        "tasks": "col-span-12 md:col-span-4 row-span-2"
+      }
+    },
+    "aviary_view": {
+      "type": "CSS Grid Inventory",
+      "structure": "grid-cols-[repeat(auto-fill,minmax(250px,1fr))]",
+      "gap": "gap-4",
+      "item_style": "Visual Cage Card - 1px border, status indicator top-right"
+    }
+  },
+  "components": {
+    "buttons": {
+      "style": "pill-shaped or sharp-edged (no default rounded-md)",
+      "variants": {
+        "primary": "bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90 font-bold uppercase tracking-wider",
+        "outline": "border border-[#FFC300] text-[#FFC300] hover:bg-[#FFC300]/10"
+      }
+    },
+    "cards": {
+      "style": "Flat, No Shadow, 1px Border",
+      "bg": "bg-[#202940]",
+      "border": "border-white/5",
+      "hover": "hover:border-[#FFC300]/50 transition-colors duration-300"
+    },
+    "status_indicators": {
+      "style": "Dot with glow",
+      "size": "h-2 w-2 rounded-full"
+    },
+    "forms": {
+      "input_bg": "bg-[#1A2035]",
+      "border": "border-white/10",
+      "focus": "ring-1 ring-[#FFC300] border-[#FFC300]"
+    }
+  },
+  "visual_enhancers": {
+    "textures": {
+      "noise": "url(\"data:image/svg+xml,...noise...\") opacity-5",
+      "grid": "Use subtle grid lines in background of Aviary View"
+    },
+    "glassmorphism": {
+      "usage": "Sticky headers, floating action buttons",
+      "classes": "backdrop-blur-xl bg-[#1A2035]/80 border-b border-white/5"
+    }
+  },
+  "image_urls": {
+    "hero_bird": {
+      "url": "https://images.unsplash.com/photo-1519700048278-279185ba0a83?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwyfHxjYW5hcnklMjBiaXJkJTIwbmF0dXJlJTIwY2xvc2UlMjB1cCUyMGRldGFpbHN8ZW58MHx8fHwxNzcyODcyOTMwfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Close up yellow canary for welcome/hero widget",
+      "category": "hero"
+    },
+    "cage_texture": {
+      "url": "https://images.unsplash.com/photo-1720966691320-08212b98aa75?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwYmlyZCUyMGNhZ2UlMjB3aXJlJTIwdGV4dHVyZXxlbnwwfHx8fDE3NzI4NzI5MzF8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Wire mesh texture for cage backgrounds or sidebar",
+      "category": "texture"
+    }
+  },
+  "universal_guidelines": [
+    "Dark Mode is mandatory (#1A2035 background).",
+    "Avoid gradients on text. Use solid colors for legibility.",
+    "Use 'Barlow Condensed' for all headings to give an industrial/inventory feel.",
+    "Buttons must contrast sharply with the dark background (Use #FFC300).",
+    "All interactive elements must have data-testid attributes.",
+    "Do not use native HTML date pickers; use Shadcn Calendar.",
+    "Do not use native HTML selects; use Shadcn Select.",
+    "Use Sonner for toasts.",
+    "Grid layouts must be responsive (mobile-first).",
+    "Bird Cards in Aviary view must show: Cage Number, Male ID, Female ID, Status (Laying/Incubating/etc).",
+    "Status colors must be consistent: Yellow=Laying, Orange=Incubating, Teal=Hatched/Banded."
+  ],
+  "instructions_to_main_agent": [
+    "Install 'sonner' for toasts.",
+    "Install '@radix-ui/react-icons' and 'lucide-react' for icons.",
+    "Configure Tailwind with the custom colors defined in 'colors.palette'.",
+    "Create a 'Layout' component that wraps the app with the dark theme and sidebar.",
+    "Use the Bento Grid strategy for the Dashboard page.",
+    "Implement the Bird Registry as a sortable/filterable table."
+  ]
+}
