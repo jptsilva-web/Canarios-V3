@@ -39,6 +39,9 @@ Build a canary breeding control/management web application with a local database
 - ✅ **Email Notification Settings** - Configure Gmail SMTP with App Password for task alerts ✅ WORKING
 - ✅ Newborn chicks tracking page
 - ✅ **Family Tree/Genealogy** - View bird ancestry (grandparents, parents, siblings, children)
+  - **Search functionality** - Search birds by band number, STAM, or class name
+  - **Gender filter** - Filter by All Birds, Males Only, or Females Only
+  - **Quick stats** - Shows total birds count with male/female breakdown
 - ✅ **Breeding Reports** - Statistics with fertility rate, hatch rate, egg breakdown, clutch summary
 - ✅ **Data Export** - Export birds and breeding reports to CSV/PDF
 - ✅ Dark navy theme with custom accent colors
@@ -75,11 +78,12 @@ Build a canary breeding control/management web application with a local database
 - [Done] Bird genealogy/family tree visualization
 - [Done] Breeding statistics and reports
 - [Done] Data export (CSV/PDF)
+- [Done] Search functionality in genealogy page
 
 ### P1 (High Priority)
 - Bird photo attachments
-- Breeding performance trends over time
-- Search/filter in genealogy
+- Breeding performance trends over time (charts)
+- Advanced search across all pages
 
 ### P2 (Medium Priority)
 - Multiple user support with authentication
@@ -90,7 +94,7 @@ Build a canary breeding control/management web application with a local database
 ## Next Tasks
 1. Add photo attachments for birds
 2. Implement breeding performance trends chart
-3. Add search functionality in genealogy page
+3. Add advanced search across all pages
 4. Consider multi-user authentication for shared aviaries
 
 ## Notes

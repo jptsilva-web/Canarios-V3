@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   GitBranch,
   Bird,
   Users,
   ChevronRight,
   X,
-  ArrowLeft
+  Search,
+  Check,
+  ChevronsUpDown,
+  Filter
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +26,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '../components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '../components/ui/popover';
 import { birdsApi, genealogyApi } from '../lib/api';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
@@ -106,7 +123,9 @@ export const Genealogy = () => {
   const [genealogy, setGenealogy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingGenealogy, setLoadingGenealogy] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [genderFilter, setGenderFilter] = useState('all');
 
   useEffect(() => {
     fetchBirds();
@@ -137,9 +156,33 @@ export const Genealogy = () => {
     }
   };
 
+  const getClassName = (classId) => {
+    const c = CANARY_CLASSES.find(cls => cls.id.toString() === classId);
+    return c ? c.name : '';
+  };
+
+  // Filter birds based on search query and gender
+  const filteredBirds = useMemo(() => {
+    return birds.filter(bird => {
+      const matchesGender = genderFilter === 'all' || bird.gender === genderFilter;
+      if (!searchQuery) return matchesGender;
+      
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = 
+        bird.band_number?.toLowerCase().includes(query) ||
+        bird.stam?.toLowerCase().includes(query) ||
+        getClassName(bird.class_id)?.toLowerCase().includes(query) ||
+        bird.species?.toLowerCase().includes(query);
+      
+      return matchesSearch && matchesGender;
+    });
+  }, [birds, searchQuery, genderFilter]);
+
   const handleSelectBird = (birdId) => {
     const bird = birds.find(b => b.id === birdId);
     setSelectedBird(bird);
+    setSearchOpen(false);
+    setSearchQuery('');
     if (birdId) {
       fetchGenealogy(birdId);
     } else {
@@ -152,6 +195,12 @@ export const Genealogy = () => {
       setSelectedBird(bird);
       fetchGenealogy(bird.id);
     }
+  };
+
+  const clearSelection = () => {
+    setSelectedBird(null);
+    setGenealogy(null);
+    setSearchQuery('');
   };
 
   if (loading) {
@@ -176,47 +225,156 @@ export const Genealogy = () => {
         </div>
       </div>
 
-      {/* Bird Selector */}
+      {/* Bird Selector with Search */}
       <Card className="bg-[#202940] border-white/5">
         <CardContent className="py-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="flex-1">
-              <Select
-                value={selectedBird?.id || ''}
-                onValueChange={handleSelectBird}
-              >
-                <SelectTrigger 
-                  className="bg-[#1A2035] border-white/10 text-white w-full sm:w-80"
-                  data-testid="bird-selector"
-                >
-                  <SelectValue placeholder="Select a bird to view family tree..." />
-                </SelectTrigger>
-                <SelectContent className="bg-[#202940] border-white/10 max-h-[300px]">
-                  {birds.map((bird) => (
-                    <SelectItem 
-                      key={bird.id} 
-                      value={bird.id}
-                      className="text-white hover:bg-[#1A2035]"
-                    >
+          <div className="flex flex-col gap-4">
+            {/* Search and Filter Row */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              {/* Searchable Bird Selector */}
+              <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={searchOpen}
+                    className="w-full sm:w-96 justify-between bg-[#1A2035] border-white/10 text-white hover:bg-[#1A2035] hover:text-white"
+                    data-testid="bird-search-selector"
+                  >
+                    {selectedBird ? (
                       <div className="flex items-center gap-2">
-                        <Bird size={14} className={bird.gender === 'male' ? 'text-[#00BFA6]' : 'text-[#FF69B4]'} />
-                        <span className="font-mono">{bird.band_number}</span>
-                        <span className="text-slate-400">- {bird.stam || 'No STAM'}</span>
+                        <Bird size={16} className={selectedBird.gender === 'male' ? 'text-[#00BFA6]' : 'text-[#FF69B4]'} />
+                        <span className="font-mono">{selectedBird.band_number}</span>
+                        <span className="text-slate-400">- {selectedBird.stam || 'No STAM'}</span>
                       </div>
-                    </SelectItem>
-                  ))}
+                    ) : (
+                      <span className="text-slate-400 flex items-center gap-2">
+                        <Search size={16} />
+                        Search bird by band, STAM, or class...
+                      </span>
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0 bg-[#202940] border-white/10" align="start">
+                  <Command className="bg-transparent">
+                    <CommandInput 
+                      placeholder="Search by band number, STAM, class..." 
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                      className="text-white"
+                      data-testid="genealogy-search-input"
+                    />
+                    <CommandList className="max-h-[300px]">
+                      <CommandEmpty className="text-slate-400 py-6 text-center">
+                        <Bird className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        No birds found matching "{searchQuery}"
+                      </CommandEmpty>
+                      <CommandGroup heading={`${filteredBirds.length} birds found`}>
+                        {filteredBirds.map((bird) => (
+                          <CommandItem
+                            key={bird.id}
+                            value={`${bird.band_number} ${bird.stam || ''} ${getClassName(bird.class_id)}`}
+                            onSelect={() => handleSelectBird(bird.id)}
+                            className="text-white hover:bg-[#1A2035] cursor-pointer py-2"
+                            data-testid={`bird-option-${bird.id}`}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedBird?.id === bird.id ? "opacity-100 text-[#FFC300]" : "opacity-0"
+                              )}
+                            />
+                            <Bird 
+                              size={16} 
+                              className={cn(
+                                "mr-2",
+                                bird.gender === 'male' ? 'text-[#00BFA6]' : 'text-[#FF69B4]'
+                              )} 
+                            />
+                            <div className="flex-1 flex items-center gap-2">
+                              <span className="font-mono font-medium">{bird.band_number}</span>
+                              <span className="text-slate-400">·</span>
+                              <span className="text-[#FFC300] text-sm">{bird.stam || '-'}</span>
+                              {bird.class_id && (
+                                <>
+                                  <span className="text-slate-400">·</span>
+                                  <span className="text-xs text-slate-500 truncate max-w-[120px]">
+                                    {getClassName(bird.class_id)}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            <span className="text-xs text-slate-500">{bird.band_year}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {/* Gender Filter */}
+              <Select value={genderFilter} onValueChange={setGenderFilter}>
+                <SelectTrigger 
+                  className="w-full sm:w-40 bg-[#1A2035] border-white/10 text-white"
+                  data-testid="gender-filter"
+                >
+                  <Filter size={16} className="mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#202940] border-white/10">
+                  <SelectItem value="all" className="text-white hover:bg-[#1A2035]">All Birds</SelectItem>
+                  <SelectItem value="male" className="text-white hover:bg-[#1A2035]">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#00BFA6]" />
+                      Males Only
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="female" className="text-white hover:bg-[#1A2035]">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#FF69B4]" />
+                      Females Only
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Clear Button */}
+              {selectedBird && (
+                <Button
+                  variant="outline"
+                  onClick={clearSelection}
+                  className="border-white/10 text-white hover:bg-white/5"
+                  data-testid="clear-selection-btn"
+                >
+                  <X size={16} className="mr-2" /> Clear
+                </Button>
+              )}
             </div>
-            {selectedBird && (
-              <Button
-                variant="outline"
-                onClick={() => { setSelectedBird(null); setGenealogy(null); }}
-                className="border-white/10 text-white hover:bg-white/5"
-              >
-                <X size={16} className="mr-2" /> Clear
-              </Button>
-            )}
+
+            {/* Quick Stats */}
+            <div className="flex flex-wrap gap-3 text-xs">
+              <span className="text-slate-500">
+                Total: <span className="text-white font-medium">{birds.length}</span> birds
+              </span>
+              <span className="text-slate-500">|</span>
+              <span className="text-[#00BFA6]">
+                {birds.filter(b => b.gender === 'male').length} males
+              </span>
+              <span className="text-slate-500">|</span>
+              <span className="text-[#FF69B4]">
+                {birds.filter(b => b.gender === 'female').length} females
+              </span>
+              {genderFilter !== 'all' && (
+                <>
+                  <span className="text-slate-500">|</span>
+                  <span className="text-[#FFC300]">
+                    Showing: {filteredBirds.length} {genderFilter}s
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
