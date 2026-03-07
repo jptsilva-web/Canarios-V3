@@ -43,7 +43,7 @@ export const translations = {
       active: 'Ativo',
       completed: 'Concluído',
       export: 'Exportar',
-      unknown: 'Desconhecido',
+      unknown: 'Indefinido',
       year: 'Ano',
       update: 'Atualizar',
       create: 'Criar',

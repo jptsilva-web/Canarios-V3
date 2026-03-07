@@ -644,7 +644,11 @@ export const Birds = () => {
                           ? 'bg-[#FF69B4]/20 text-[#FF69B4]'
                           : 'bg-[#FFC300]/20 text-[#FFC300]'
                       )}>
-                        {bird.gender === 'unknown' ? '? newborn' : bird.gender}
+                        {bird.gender === 'male' 
+                          ? t('common.male') 
+                          : bird.gender === 'female' 
+                          ? t('common.female') 
+                          : t('common.unknown')}
                       </span>
                     </TableCell>
                     <TableCell className="text-[#FFC300] font-mono">{bird.stam || bird.color || '-'}</TableCell>
