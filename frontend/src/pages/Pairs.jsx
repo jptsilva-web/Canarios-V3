@@ -48,6 +48,7 @@ import {
 import { pairsApi, cagesApi, birdsApi, clutchesApi, zonesApi } from '../lib/api';
 import { cn, formatDate, getStatusColor } from '../lib/utils';
 import { toast } from 'sonner';
+import { useLanguage } from '../lib/LanguageContext';
 
 // Egg Status Component with click to change status
 const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
@@ -633,6 +634,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
 };
 
 export const Pairs = () => {
+  const { t } = useLanguage();
   const [pairs, setPairs] = useState([]);
   const [cages, setCages] = useState([]);
   const [birds, setBirds] = useState([]);
@@ -734,10 +736,10 @@ export const Pairs = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-            Breeding Pairs
+            {t('pairs.title')}
           </h1>
           <p className="text-slate-400 mt-1">
-            Manage your breeding pairs and clutches
+            {t('pairs.subtitle')}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -752,18 +754,18 @@ export const Pairs = () => {
               className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90 font-bold"
               data-testid="add-pair-btn"
             >
-              <Plus size={20} className="mr-2" /> Add Pair
+              <Plus size={20} className="mr-2" /> {t('pairs.addPair')}
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-[#202940] border-white/10 text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-['Barlow_Condensed']">
-                {editingPair ? 'Edit Pair' : 'Add New Pair'}
+                {editingPair ? t('pairs.editPair') : t('pairs.addPair')}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label className="text-slate-300">Pair Name</Label>
+                <Label className="text-slate-300">{t('pairs.pairName')}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -773,13 +775,13 @@ export const Pairs = () => {
                 />
               </div>
               <div>
-                <Label className="text-slate-300">Cage</Label>
+                <Label className="text-slate-300">{t('pairs.cage')}</Label>
                 <Select
                   value={formData.cage_id}
                   onValueChange={(value) => setFormData({ ...formData, cage_id: value })}
                 >
                   <SelectTrigger className="bg-[#1A2035] border-white/10 text-white" data-testid="cage-select">
-                    <SelectValue placeholder="Select a cage" />
+                    <SelectValue placeholder={t('pairs.cage')} />
                   </SelectTrigger>
                   <SelectContent className="bg-[#202940] border-white/10">
                     {cages.map((cage) => (
@@ -792,13 +794,13 @@ export const Pairs = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">Male</Label>
+                  <Label className="text-slate-300">{t('common.male')}</Label>
                   <Select
                     value={formData.male_id}
                     onValueChange={(value) => setFormData({ ...formData, male_id: value })}
                   >
                     <SelectTrigger className="bg-[#1A2035] border-white/10 text-white" data-testid="male-select">
-                      <SelectValue placeholder="Select male" />
+                      <SelectValue placeholder={t('common.male')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#202940] border-white/10">
                       {males.map((bird) => (

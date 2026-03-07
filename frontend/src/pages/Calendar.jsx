@@ -28,6 +28,7 @@ import {
 import { dashboardApi } from '../lib/api';
 import { cn, getTaskTypeColor } from '../lib/utils';
 import { toast } from 'sonner';
+import { useLanguage } from '../lib/LanguageContext';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -44,6 +45,7 @@ const TASK_TYPES = [
 ];
 
 export const CalendarPage = () => {
+  const { t } = useLanguage();
   const [tasks, setTasks] = useState([]);
   const [manualTasks, setManualTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -214,10 +216,10 @@ export const CalendarPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-            Calendar
+            {t('calendar.title')}
           </h1>
           <p className="text-slate-400 mt-1">
-            Right-click on a day to add or remove tasks
+            {t('calendar.rightClickToAdd')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -229,7 +231,7 @@ export const CalendarPage = () => {
             className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
             data-testid="add-task-btn"
           >
-            <Plus size={16} className="mr-2" /> Add Task
+            <Plus size={16} className="mr-2" /> {t('calendar.addTask')}
           </Button>
           <Button
             onClick={goToToday}

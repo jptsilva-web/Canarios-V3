@@ -575,14 +575,20 @@ export const Birds = () => {
               />
             </div>
             <Select value={genderFilter} onValueChange={setGenderFilter}>
-              <SelectTrigger className="w-full sm:w-40 bg-[#1A2035] border-white/10 text-white" data-testid="gender-filter">
+              <SelectTrigger className="w-full sm:w-48 bg-[#1A2035] border-white/10 text-white" data-testid="gender-filter">
                 <Filter size={16} className="mr-2" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-[#202940] border-white/10">
-                <SelectItem value="all" className="text-white hover:bg-[#1A2035]">All Birds</SelectItem>
-                <SelectItem value="male" className="text-white hover:bg-[#1A2035]">Males Only</SelectItem>
-                <SelectItem value="female" className="text-white hover:bg-[#1A2035]">Females Only</SelectItem>
+                <SelectItem value="all" className="text-white hover:bg-[#1A2035]">{t('genealogy.allBirds')}</SelectItem>
+                <SelectItem value="male" className="text-white hover:bg-[#1A2035]">{t('genealogy.malesOnly')}</SelectItem>
+                <SelectItem value="female" className="text-white hover:bg-[#1A2035]">{t('genealogy.femalesOnly')}</SelectItem>
+                <SelectItem value="unknown" className="text-white hover:bg-[#1A2035]">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#FFC300]" />
+                    Newborns (?)
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -634,9 +640,11 @@ export const Birds = () => {
                         'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
                         bird.gender === 'male' 
                           ? 'bg-[#00BFA6]/20 text-[#00BFA6]' 
-                          : 'bg-[#FF69B4]/20 text-[#FF69B4]'
+                          : bird.gender === 'female'
+                          ? 'bg-[#FF69B4]/20 text-[#FF69B4]'
+                          : 'bg-[#FFC300]/20 text-[#FFC300]'
                       )}>
-                        {bird.gender}
+                        {bird.gender === 'unknown' ? '? newborn' : bird.gender}
                       </span>
                     </TableCell>
                     <TableCell className="text-[#FFC300] font-mono">{bird.stam || bird.color || '-'}</TableCell>

@@ -950,6 +950,63 @@ async def get_breeding_stats():
         avg_hatched_per_clutch=round(avg_hatched_per_clutch, 1)
     )
 
+@api_router.get("/reports/breeding-trends")
+async def get_breeding_trends():
+    """Get monthly breeding performance trends"""
+    clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+    
+    # Group clutches by month
+    monthly_data = {}
+    
+    for clutch in clutches:
+        # Use start_date or created_at
+        date_str = clutch.get("start_date") or clutch.get("created_at", "")[:10]
+        if not date_str:
+            continue
+            
+        # Extract year-month
+        year_month = date_str[:7]  # YYYY-MM
+        
+        if year_month not in monthly_data:
+            monthly_data[year_month] = {
+                "total_eggs": 0,
+                "fertile_eggs": 0,
+                "hatched_eggs": 0,
+                "infertile_eggs": 0,
+                "clutches": 0
+            }
+        
+        monthly_data[year_month]["clutches"] += 1
+        
+        for egg in clutch.get("eggs", []):
+            monthly_data[year_month]["total_eggs"] += 1
+            status = egg.get("status", "fresh")
+            if status == "fertile":
+                monthly_data[year_month]["fertile_eggs"] += 1
+            elif status == "hatched":
+                monthly_data[year_month]["hatched_eggs"] += 1
+                monthly_data[year_month]["fertile_eggs"] += 1  # hatched counts as fertile
+            elif status == "infertile":
+                monthly_data[year_month]["infertile_eggs"] += 1
+    
+    # Calculate rates and format for chart
+    trends = []
+    for month, data in sorted(monthly_data.items()):
+        fertility_rate = (data["fertile_eggs"] / data["total_eggs"] * 100) if data["total_eggs"] > 0 else 0
+        hatch_rate = (data["hatched_eggs"] / data["fertile_eggs"] * 100) if data["fertile_eggs"] > 0 else 0
+        
+        trends.append({
+            "month": month,
+            "total_eggs": data["total_eggs"],
+            "fertile_eggs": data["fertile_eggs"],
+            "hatched_eggs": data["hatched_eggs"],
+            "clutches": data["clutches"],
+            "fertility_rate": round(fertility_rate, 1),
+            "hatch_rate": round(hatch_rate, 1)
+        })
+    
+    return trends
+
 # ============ GENEALOGY API ============
 class BirdWithParents(BaseModel):
     id: str

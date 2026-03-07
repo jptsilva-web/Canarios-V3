@@ -73,6 +73,7 @@ export const dashboardApi = {
 // Reports API
 export const reportsApi = {
   getBreedingStats: () => api.get('/reports/breeding-stats'),
+  getBreedingTrends: () => api.get('/reports/breeding-trends'),
 };
 
 // Genealogy API

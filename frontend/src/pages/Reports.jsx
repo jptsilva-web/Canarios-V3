@@ -9,7 +9,8 @@ import {
   TrendingUp,
   Target,
   Activity,
-  CheckCircle
+  CheckCircle,
+  LineChart
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -79,19 +80,124 @@ const RateCard = ({ label, rate, description, color }) => (
   </div>
 );
 
+// Simple trend chart component
+const TrendChart = ({ data, t }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48 text-slate-500">
+        No trend data available yet
+      </div>
+    );
+  }
+
+  const maxEggs = Math.max(...data.map(d => d.total_eggs), 1);
+  const maxRate = 100;
+
+  // Format month for display
+  const formatMonth = (month) => {
+    const [year, m] = month.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[parseInt(m) - 1]} ${year.slice(2)}`;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-[#FFC300]" />
+          <span className="text-slate-400">{t('reports.totalEggs')}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-[#00BFA6]" />
+          <span className="text-slate-400">{t('reports.hatched')}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full border-2 border-[#E91E63]" />
+          <span className="text-slate-400">{t('reports.fertilityRate')}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full border-2 border-[#FF9800]" />
+          <span className="text-slate-400">{t('reports.hatchRate')}</span>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="relative h-48">
+        {/* Y-axis labels */}
+        <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-xs text-slate-500 w-8">
+          <span>{maxEggs}</span>
+          <span>{Math.round(maxEggs / 2)}</span>
+          <span>0</span>
+        </div>
+        
+        {/* Bars and lines */}
+        <div className="ml-10 h-full flex items-end gap-1 overflow-x-auto pb-6">
+          {data.map((item, index) => (
+            <div key={item.month} className="flex flex-col items-center gap-1 min-w-[60px]">
+              {/* Bars container */}
+              <div className="relative h-36 w-full flex items-end justify-center gap-1">
+                {/* Total eggs bar */}
+                <div 
+                  className="w-4 bg-[#FFC300]/80 rounded-t transition-all duration-500"
+                  style={{ height: `${(item.total_eggs / maxEggs) * 100}%` }}
+                  title={`${item.total_eggs} eggs`}
+                />
+                {/* Hatched bar */}
+                <div 
+                  className="w-4 bg-[#00BFA6]/80 rounded-t transition-all duration-500"
+                  style={{ height: `${(item.hatched_eggs / maxEggs) * 100}%` }}
+                  title={`${item.hatched_eggs} hatched`}
+                />
+                {/* Rate dots */}
+                <div 
+                  className="absolute w-3 h-3 rounded-full border-2 border-[#E91E63] bg-[#202940]"
+                  style={{ bottom: `${(item.fertility_rate / maxRate) * 100}%`, right: '10px' }}
+                  title={`${item.fertility_rate}% fertility`}
+                />
+                <div 
+                  className="absolute w-3 h-3 rounded-full border-2 border-[#FF9800] bg-[#202940]"
+                  style={{ bottom: `${(item.hatch_rate / maxRate) * 100}%`, right: '25px' }}
+                  title={`${item.hatch_rate}% hatch rate`}
+                />
+              </div>
+              {/* Month label */}
+              <span className="text-[10px] text-slate-500 whitespace-nowrap">
+                {formatMonth(item.month)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Right Y-axis for percentages */}
+        <div className="absolute right-0 top-0 bottom-6 flex flex-col justify-between text-xs text-slate-500 w-8 text-right">
+          <span>100%</span>
+          <span>50%</span>
+          <span>0%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Reports = () => {
   const { t } = useLanguage();
   const [stats, setStats] = useState(null);
+  const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
+    fetchData();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchData = async () => {
     try {
-      const res = await reportsApi.getBreedingStats();
-      setStats(res.data);
+      const [statsRes, trendsRes] = await Promise.all([
+        reportsApi.getBreedingStats(),
+        reportsApi.getBreedingTrends(),
+      ]);
+      setStats(statsRes.data);
+      setTrends(trendsRes.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
       toast.error('Failed to load statistics');
@@ -248,6 +354,19 @@ export const Reports = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Breeding Trends Chart */}
+      <Card className="bg-[#202940] border-white/5">
+        <CardHeader>
+          <CardTitle className="text-lg font-['Barlow_Condensed'] text-white uppercase tracking-wider flex items-center gap-2">
+            <LineChart size={20} className="text-[#FFC300]" />
+            {t('reports.performanceMetrics')} - Monthly Trends
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TrendChart data={trends} t={t} />
+        </CardContent>
+      </Card>
 
       {/* Clutch Summary */}
       <Card className="bg-[#202940] border-white/5">

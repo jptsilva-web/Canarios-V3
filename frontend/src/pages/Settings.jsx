@@ -13,6 +13,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { toast } from 'sonner';
+import { useLanguage } from '../lib/LanguageContext';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -40,6 +41,7 @@ const STAGE_COLORS = [
 ];
 
 export const Settings = () => {
+  const { t } = useLanguage();
   const [breedingSettings, setBreedingSettings] = useState(DEFAULT_BREEDING);
   const [emailSettings, setEmailSettings] = useState(DEFAULT_EMAIL);
   const [loading, setLoading] = useState(true);
@@ -155,10 +157,10 @@ export const Settings = () => {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-          Settings
+          {t('settings.title')}
         </h1>
         <p className="text-slate-400 mt-1">
-          Configure breeding cycle and notifications
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -168,18 +170,18 @@ export const Settings = () => {
           <div>
             <CardTitle className="text-lg text-white font-['Barlow_Condensed'] uppercase tracking-wider flex items-center gap-2">
               <Mail size={20} className="text-[#FFC300]" />
-              Email Notifications
+              {t('settings.emailNotifications')}
             </CardTitle>
             <p className="text-sm text-slate-400 mt-1">
-              Receive email alerts for tasks and reminders
+              {t('settings.subtitle')}
             </p>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 rounded-lg bg-[#1A2035]">
             <div>
-              <Label className="text-white">Enable Email Notifications</Label>
-              <p className="text-xs text-slate-400 mt-1">Send emails when new tasks are created</p>
+              <Label className="text-white">{t('settings.enableNotifications')}</Label>
+              <p className="text-xs text-slate-400 mt-1">{t('settings.subtitle')}</p>
             </div>
             <Switch
               checked={emailSettings.email_enabled}
@@ -189,7 +191,7 @@ export const Settings = () => {
           </div>
           
           <div className="space-y-2">
-            <Label className="text-slate-300">Notification Email</Label>
+            <Label className="text-slate-300">{t('settings.notificationEmail')}</Label>
             <div className="flex gap-3">
               <Input
                 type="email"

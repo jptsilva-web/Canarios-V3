@@ -41,14 +41,18 @@ Build a canary breeding control/management web application with a local database
 - ✅ Newborn chicks tracking page
 - ✅ **Family Tree/Genealogy** - View bird ancestry (grandparents, parents, siblings, children)
   - **Search functionality** - Search birds by band number, STAM, or class name
-  - **Gender filter** - Filter by All Birds, Males Only, or Females Only
+  - **Gender filter** - Filter by All Birds, Males Only, Females Only, or Newborns
+  - **Newborns filter** - Dedicated filter for recently hatched chicks
   - **Quick stats** - Shows total birds count with male/female breakdown
 - ✅ **Breeding Reports** - Statistics with fertility rate, hatch rate, egg breakdown, clutch summary
+  - **Monthly trends chart** - Visual bar chart showing eggs, hatched, and rates over time
 - ✅ **Data Export** - Export birds and breeding reports to CSV/PDF
 - ✅ **Multi-language Support** - 3 languages with flag selector:
-  - 🇵🇹 Português (Portugal)
+  - 🇵🇹 Português (Portugal) - Full translation
   - 🇬🇧 English
   - 🇪🇸 Español
+- ✅ **Auto-create newborn birds** - When eggs are banded, automatically creates bird record with parents linked
+- ✅ **Update newborn gender** - Can edit newborn to set gender once determined
 - ✅ Dark navy theme with custom accent colors
 - ✅ Mobile-responsive sidebar navigation
 
@@ -85,22 +89,24 @@ Build a canary breeding control/management web application with a local database
 - [Done] Data export (CSV/PDF)
 - [Done] Search functionality in genealogy page
 - [Done] Multi-language support (PT/EN/ES)
+- [Done] Monthly breeding trends chart
+- [Done] Update newborn's gender
 
 ### P1 (High Priority)
 - Bird photo attachments
-- Breeding performance trends over time (charts)
-- Advanced search across all pages
+- Advanced analytics dashboard
+- Print breeding cards/labels
 
 ### P2 (Medium Priority)
 - Multiple user support with authentication
-- Breeding performance analytics dashboard
+- Breeding performance year-over-year comparison
 - Mobile app version
 - Data backup/restore functionality
 
 ## Next Tasks
-1. Add photo attachments for birds
-2. Implement breeding performance trends chart
-3. Add advanced search across all pages
+1. Add bird photo attachments
+2. Create printable breeding cards
+3. Add year-over-year comparison in reports
 4. Consider multi-user authentication for shared aviaries
 
 ## Notes
