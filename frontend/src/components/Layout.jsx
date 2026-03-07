@@ -67,7 +67,11 @@ export const Layout = ({ children }) => {
             data-testid="language-selector"
             className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg bg-[#202940] border border-white/10 text-white hover:border-[#FFC300]/50 transition-colors"
           >
-            <span className="text-xl">{currentLang?.flag}</span>
+            <img 
+              src={currentLang?.flag} 
+              alt={currentLang?.name}
+              className="w-6 h-6 rounded-full object-cover ring-2 ring-white/20"
+            />
             <span className="text-sm hidden sm:inline">{currentLang?.name}</span>
           </button>
         </PopoverTrigger>
@@ -91,7 +95,14 @@ export const Layout = ({ children }) => {
                     : "text-white hover:bg-white/5"
                 )}
               >
-                <span className="text-xl">{lang.flag}</span>
+                <img 
+                  src={lang.flag} 
+                  alt={lang.name}
+                  className={cn(
+                    "w-6 h-6 rounded-full object-cover ring-2",
+                    language === lang.code ? "ring-[#FFC300]" : "ring-white/20"
+                  )}
+                />
                 <span>{lang.name}</span>
                 {language === lang.code && (
                   <ChevronRight size={14} className="ml-auto" />

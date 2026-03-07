@@ -3,10 +3,11 @@ import { translations, getTranslation } from './translations';
 
 const LanguageContext = createContext();
 
+// Using flagcdn.com for round flag images
 export const languages = [
-  { code: 'pt', name: 'Português', flag: '🇵🇹' },
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'pt', name: 'Português', flag: 'https://flagcdn.com/w40/pt.png', countryCode: 'pt' },
+  { code: 'en', name: 'English', flag: 'https://flagcdn.com/w40/gb.png', countryCode: 'gb' },
+  { code: 'es', name: 'Español', flag: 'https://flagcdn.com/w40/es.png', countryCode: 'es' },
 ];
 
 export const LanguageProvider = ({ children }) => {
