@@ -27,7 +27,7 @@ Build a canary breeding control/management web application with a local database
 ## What's Been Implemented (March 2026)
 - ✅ Full-stack application with React + FastAPI + MongoDB
 - ✅ Dashboard with stats cards and task preview
-- ✅ Bird registry with CRUD, search, and gender filter
+- ✅ Bird registry with CRUD, search, gender filter, and **parent selection for genealogy**
 - ✅ Zones & Cages management with visual grid
 - ✅ Breeding pairs management with clutch tracking
 - ✅ Egg tracking with visual indicators
@@ -36,8 +36,11 @@ Build a canary breeding control/management web application with a local database
 - ✅ Tasks page grouped by urgency (overdue, today, upcoming)
 - ✅ Calendar view with breeding events and manual task creation
 - ✅ Contacts directory for breeders
-- ✅ **Email Notification Settings** - Configure Gmail SMTP with App Password for task alerts
+- ✅ **Email Notification Settings** - Configure Gmail SMTP with App Password for task alerts ✅ WORKING
 - ✅ Newborn chicks tracking page
+- ✅ **Family Tree/Genealogy** - View bird ancestry (grandparents, parents, siblings, children)
+- ✅ **Breeding Reports** - Statistics with fertility rate, hatch rate, egg breakdown, clutch summary
+- ✅ **Data Export** - Export birds and breeding reports to CSV/PDF
 - ✅ Dark navy theme with custom accent colors
 - ✅ Mobile-responsive sidebar navigation
 
@@ -46,12 +49,18 @@ Build a canary breeding control/management web application with a local database
 - `/api/zones/{id}/generate-cages` - Auto-generate cage grid
 - `/api/cages` - Cage management
 - `/api/birds` - Bird registry CRUD
+- `/api/birds/{id}/genealogy` - Get bird genealogy (parents, grandparents, children, siblings)
 - `/api/pairs` - Breeding pairs CRUD
 - `/api/clutches` - Clutch management
 - `/api/clutches/{id}/eggs` - Egg tracking (POST to add, PUT to update status)
 - `/api/contacts` - Breeder contacts CRUD
 - `/api/dashboard/stats` - Dashboard statistics
 - `/api/dashboard/tasks` - Task list
+- `/api/reports/breeding-stats` - Comprehensive breeding statistics
+- `/api/export/birds/csv` - Export birds to CSV
+- `/api/export/birds/pdf` - Export birds to PDF
+- `/api/export/breeding-report/csv` - Export breeding report to CSV
+- `/api/export/breeding-report/pdf` - Export breeding report to PDF
 - `/api/settings` - Get all settings (breeding & email)
 - `/api/settings/breeding` - Save breeding cycle configuration
 - `/api/settings/email` - Save email notification settings
@@ -63,28 +72,28 @@ Build a canary breeding control/management web application with a local database
 - [Done] All core features implemented
 - [Done] Interactive egg status feature
 - [Done] Email notification configuration
+- [Done] Bird genealogy/family tree visualization
+- [Done] Breeding statistics and reports
+- [Done] Data export (CSV/PDF)
 
 ### P1 (High Priority)
-- Email notifications sending (requires user to generate Gmail App Password)
-- Bird genealogy tree view
-- Breeding history reports
-- Export data to CSV/PDF
+- Bird photo attachments
+- Breeding performance trends over time
+- Search/filter in genealogy
 
 ### P2 (Medium Priority)
 - Multiple user support with authentication
-- Photo attachments for birds
-- Breeding performance analytics
+- Breeding performance analytics dashboard
 - Mobile app version
+- Data backup/restore functionality
 
 ## Next Tasks
-1. User to configure Gmail App Password for email notifications to work
-2. Add genealogy/family tree visualization for birds
-3. Implement breeding statistics and reports
-4. Add data export functionality (CSV/PDF)
-5. Consider multi-user authentication for shared aviaries
+1. Add photo attachments for birds
+2. Implement breeding performance trends chart
+3. Add search functionality in genealogy page
+4. Consider multi-user authentication for shared aviaries
 
 ## Notes
-- **Email Notifications**: Currently configured but requires a Gmail App Password (not regular password) to send emails. User needs to:
-  1. Enable 2-Step Verification on their Google Account
-  2. Generate an App Password at Google Account → Security → App passwords
-  3. Enter their Gmail and App Password in the Settings page
+- **Email Notifications**: Configured and working with Gmail App Password
+- **Genealogy**: Birds can now have parents assigned, enabling family tree visualization
+- **Exports**: Birds and breeding reports can be exported to CSV or PDF from the Reports page
