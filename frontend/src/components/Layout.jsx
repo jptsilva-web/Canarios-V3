@@ -18,9 +18,9 @@ import { Toaster } from './ui/sonner';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/pairs', icon: Heart, label: 'Pairs' },
-  { path: '/birds', icon: Bird, label: 'Birds' },
   { path: '/zones', icon: Grid3X3, label: 'Zones & Cages' },
+  { path: '/birds', icon: Bird, label: 'Birds' },
+  { path: '/pairs', icon: Heart, label: 'Pairs' },
   { path: '/tasks', icon: ListTodo, label: 'Tasks' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/contacts', icon: Users, label: 'Contacts' },

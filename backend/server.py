@@ -82,6 +82,8 @@ class Bird(BaseModel):
     gender: BirdGender
     species: str = "Canary"
     color: Optional[str] = None
+    stam: Optional[str] = None
+    class_id: Optional[str] = None
     notes: Optional[str] = None
     parent_male_id: Optional[str] = None
     parent_female_id: Optional[str] = None
@@ -95,6 +97,8 @@ class BirdCreate(BaseModel):
     gender: BirdGender
     species: str = "Canary"
     color: Optional[str] = None
+    stam: Optional[str] = None
+    class_id: Optional[str] = None
     notes: Optional[str] = None
     parent_male_id: Optional[str] = None
     parent_female_id: Optional[str] = None

@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Bird,
   Edit,
   Trash2,
   Search,
-  Filter
+  Filter,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -43,9 +45,104 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '../components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '../components/ui/popover';
 import { birdsApi } from '../lib/api';
 import { cn, formatDate } from '../lib/utils';
 import { toast } from 'sonner';
+import { CANARY_CLASSES } from '../data/canaryClasses';
+
+// Class Selector Component with Search
+const ClassSelector = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+
+  const selectedClass = CANARY_CLASSES.find(c => c.id.toString() === value);
+
+  const filteredClasses = useMemo(() => {
+    if (!searchValue) return CANARY_CLASSES;
+    const search = searchValue.toLowerCase();
+    return CANARY_CLASSES.filter(c => 
+      c.id.toString().includes(search) || 
+      c.name.toLowerCase().includes(search)
+    );
+  }, [searchValue]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between bg-[#1A2035] border-white/10 text-white hover:bg-[#1A2035] hover:text-white"
+          data-testid="class-selector"
+        >
+          {selectedClass ? (
+            <span className="truncate">
+              <span className="text-[#FFC300] font-mono mr-2">{selectedClass.id}</span>
+              {selectedClass.name}
+            </span>
+          ) : (
+            <span className="text-slate-400">Select class...</span>
+          )}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-0 bg-[#202940] border-white/10" align="start">
+        <Command className="bg-transparent">
+          <CommandInput 
+            placeholder="Search by number or name..." 
+            value={searchValue}
+            onValueChange={setSearchValue}
+            className="text-white"
+            data-testid="class-search-input"
+          />
+          <CommandList className="max-h-[300px]">
+            <CommandEmpty className="text-slate-400 py-4 text-center">
+              No class found.
+            </CommandEmpty>
+            <CommandGroup>
+              {filteredClasses.map((canaryClass) => (
+                <CommandItem
+                  key={canaryClass.id}
+                  value={`${canaryClass.id} ${canaryClass.name}`}
+                  onSelect={() => {
+                    onChange(canaryClass.id.toString());
+                    setOpen(false);
+                    setSearchValue('');
+                  }}
+                  className="text-white hover:bg-[#1A2035] cursor-pointer"
+                  data-testid={`class-option-${canaryClass.id}`}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === canaryClass.id.toString() ? "opacity-100 text-[#FFC300]" : "opacity-0"
+                    )}
+                  />
+                  <span className="text-[#FFC300] font-mono mr-2 w-8">{canaryClass.id}</span>
+                  <span className="truncate">{canaryClass.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export const Birds = () => {
   const [birds, setBirds] = useState([]);
@@ -62,7 +159,8 @@ export const Birds = () => {
     breeder_number: '',
     gender: 'male',
     species: 'Canary',
-    color: '',
+    stam: '',
+    class_id: '',
     notes: '',
     birth_date: '',
   });
@@ -85,6 +183,17 @@ export const Birds = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.stam.trim()) {
+      toast.error('STAM is required');
+      return;
+    }
+    if (!formData.class_id) {
+      toast.error('Class is required');
+      return;
+    }
+
     try {
       if (editingBird) {
         await birdsApi.update(editingBird.id, formData);
@@ -109,7 +218,8 @@ export const Birds = () => {
       breeder_number: '',
       gender: 'male',
       species: 'Canary',
-      color: '',
+      stam: '',
+      class_id: '',
       notes: '',
       birth_date: '',
     });
@@ -123,7 +233,8 @@ export const Birds = () => {
       breeder_number: bird.breeder_number || '',
       gender: bird.gender || 'male',
       species: bird.species || 'Canary',
-      color: bird.color || '',
+      stam: bird.stam || bird.color || '',
+      class_id: bird.class_id || '',
       notes: bird.notes || '',
       birth_date: bird.birth_date || '',
     });
@@ -142,11 +253,17 @@ export const Birds = () => {
     }
   };
 
+  const getClassName = (classId) => {
+    const canaryClass = CANARY_CLASSES.find(c => c.id.toString() === classId);
+    return canaryClass ? canaryClass.name : '-';
+  };
+
   const filteredBirds = birds.filter((bird) => {
     const matchesSearch = 
       bird.band_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bird.color?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bird.breeder_number?.toLowerCase().includes(searchQuery.toLowerCase());
+      bird.stam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bird.breeder_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getClassName(bird.class_id).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGender = genderFilter === 'all' || bird.gender === genderFilter;
     return matchesSearch && matchesGender;
   });
@@ -189,7 +306,7 @@ export const Birds = () => {
               <Plus size={20} className="mr-2" /> Add Bird
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-[#202940] border-white/10 text-white max-w-md">
+          <DialogContent className="bg-[#202940] border-white/10 text-white max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-xl font-['Barlow_Condensed']">
                 {editingBird ? 'Edit Bird' : 'Add New Bird'}
@@ -236,15 +353,23 @@ export const Birds = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300">Color</Label>
+                  <Label className="text-slate-300">STAM *</Label>
                   <Input
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    placeholder="e.g., Yellow"
-                    className="bg-[#1A2035] border-white/10 text-white"
-                    data-testid="color-input"
+                    value={formData.stam}
+                    onChange={(e) => setFormData({ ...formData, stam: e.target.value })}
+                    placeholder="e.g., PT-2026-001"
+                    className="bg-[#1A2035] border-white/10 text-white font-mono"
+                    required
+                    data-testid="stam-input"
                   />
                 </div>
+              </div>
+              <div>
+                <Label className="text-slate-300">Class * <span className="text-xs text-slate-500">(search by number or name)</span></Label>
+                <ClassSelector
+                  value={formData.class_id}
+                  onChange={(value) => setFormData({ ...formData, class_id: value })}
+                />
               </div>
               <div>
                 <Label className="text-slate-300">Breeder Number</Label>
@@ -307,7 +432,7 @@ export const Birds = () => {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by band number, color, or breeder..."
+                placeholder="Search by band number, STAM, class, or breeder..."
                 className="pl-10 bg-[#1A2035] border-white/10 text-white"
                 data-testid="search-input"
               />
@@ -352,8 +477,8 @@ export const Birds = () => {
                 <TableRow className="border-white/5 hover:bg-transparent">
                   <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Band</TableHead>
                   <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Gender</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Color</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Species</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">STAM</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Class</TableHead>
                   <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Year</TableHead>
                   <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Added</TableHead>
                   <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase text-right">Actions</TableHead>
@@ -377,8 +502,13 @@ export const Birds = () => {
                         {bird.gender}
                       </span>
                     </TableCell>
-                    <TableCell className="text-slate-300">{bird.color || '-'}</TableCell>
-                    <TableCell className="text-slate-300">{bird.species}</TableCell>
+                    <TableCell className="text-[#FFC300] font-mono">{bird.stam || bird.color || '-'}</TableCell>
+                    <TableCell className="text-slate-300 max-w-[200px] truncate" title={getClassName(bird.class_id)}>
+                      {bird.class_id && (
+                        <span className="text-[#FFC300] font-mono mr-1">{bird.class_id}</span>
+                      )}
+                      {getClassName(bird.class_id)}
+                    </TableCell>
                     <TableCell className="text-slate-400 font-mono">{bird.band_year}</TableCell>
                     <TableCell className="text-slate-400">{formatDate(bird.created_at)}</TableCell>
                     <TableCell className="text-right">
