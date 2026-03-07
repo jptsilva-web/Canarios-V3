@@ -38,6 +38,7 @@ api_router = APIRouter(prefix="/api")
 class BirdGender(str, Enum):
     MALE = "male"
     FEMALE = "female"
+    UNKNOWN = "unknown"
 
 class ClutchStatus(str, Enum):
     LAYING = "laying"
@@ -655,6 +656,7 @@ async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest):
     
     eggs = clutch.get("eggs", [])
     egg_found = False
+    egg_data = None
     for egg in eggs:
         if egg["id"] == egg_id:
             egg["status"] = input.status
@@ -665,12 +667,38 @@ async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest):
             if input.banded_date:
                 egg["banded_date"] = input.banded_date
             egg_found = True
+            egg_data = egg
             break
     
     if not egg_found:
         raise HTTPException(status_code=404, detail="Egg not found")
     
     await db.clutches.update_one({"id": clutch_id}, {"$set": {"eggs": eggs}})
+    
+    # Auto-create bird when egg is banded (has band_number and status is hatched)
+    if input.band_number and input.status == "hatched":
+        # Get pair info to determine parents
+        pair = await db.pairs.find_one({"id": clutch.get("pair_id")}, {"_id": 0})
+        
+        # Check if bird with this band number already exists
+        existing_bird = await db.birds.find_one({"band_number": input.band_number}, {"_id": 0})
+        
+        if not existing_bird:
+            # Create new bird record for the newborn
+            new_bird = Bird(
+                band_number=input.band_number,
+                band_year=datetime.now().year,
+                gender="unknown",  # Unknown until determined
+                species="Canary",
+                stam="",
+                notes=f"Newborn from clutch. Hatched: {egg_data.get('hatched_date', 'N/A')}",
+                birth_date=egg_data.get("hatched_date"),
+                parent_male_id=pair.get("male_id") if pair else None,
+                parent_female_id=pair.get("female_id") if pair else None,
+            )
+            await db.birds.insert_one(new_bird.model_dump())
+            logging.info(f"Auto-created bird record for banded chick: {input.band_number}")
+    
     updated_clutch = await db.clutches.find_one({"id": clutch_id}, {"_id": 0})
     return updated_clutch
 
@@ -680,6 +708,37 @@ async def delete_clutch(clutch_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Clutch not found")
     return {"message": "Clutch deleted"}
+
+# Migrate existing banded eggs to birds collection
+@api_router.post("/migrate-banded-eggs")
+async def migrate_banded_eggs():
+    """One-time migration to create bird records for existing banded eggs"""
+    clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+    migrated = 0
+    
+    for clutch in clutches:
+        pair = await db.pairs.find_one({"id": clutch.get("pair_id")}, {"_id": 0})
+        
+        for egg in clutch.get("eggs", []):
+            if egg.get("status") == "hatched" and egg.get("band_number"):
+                # Check if bird already exists
+                existing = await db.birds.find_one({"band_number": egg["band_number"]}, {"_id": 0})
+                if not existing:
+                    new_bird = Bird(
+                        band_number=egg["band_number"],
+                        band_year=datetime.now().year,
+                        gender="unknown",
+                        species="Canary",
+                        stam="",
+                        notes=f"Newborn from clutch. Hatched: {egg.get('hatched_date', 'N/A')}",
+                        birth_date=egg.get("hatched_date"),
+                        parent_male_id=pair.get("male_id") if pair else None,
+                        parent_female_id=pair.get("female_id") if pair else None,
+                    )
+                    await db.birds.insert_one(new_bird.model_dump())
+                    migrated += 1
+    
+    return {"message": f"Migrated {migrated} banded eggs to birds collection"}
 
 # ============ CONTACTS API ============
 @api_router.post("/contacts", response_model=Contact)

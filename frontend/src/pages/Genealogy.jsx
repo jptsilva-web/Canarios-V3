@@ -8,7 +8,8 @@ import {
   Search,
   Check,
   ChevronsUpDown,
-  Filter
+  Filter,
+  Baby
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -44,6 +45,14 @@ import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { CANARY_CLASSES } from '../data/canaryClasses';
 
+const getGenderColor = (gender) => {
+  switch (gender) {
+    case 'male': return '#00BFA6';
+    case 'female': return '#FF69B4';
+    default: return '#FFC300'; // unknown/newborn
+  }
+};
+
 const BirdNode = ({ bird, onClick, highlight, size = 'normal' }) => {
   if (!bird) {
     return (
@@ -61,22 +70,25 @@ const BirdNode = ({ bird, onClick, highlight, size = 'normal' }) => {
     return c ? c.name : '';
   };
 
+  const genderColor = getGenderColor(bird.gender);
+
   return (
     <div 
       onClick={() => onClick && onClick(bird)}
       className={cn(
         "rounded-lg border-2 transition-all cursor-pointer",
-        bird.gender === 'male' 
-          ? "bg-[#00BFA6]/10 border-[#00BFA6]/50 hover:border-[#00BFA6]" 
-          : "bg-[#FF69B4]/10 border-[#FF69B4]/50 hover:border-[#FF69B4]",
         highlight && "ring-2 ring-[#FFC300] ring-offset-2 ring-offset-[#1A2035]",
         size === 'small' ? "w-20 h-16 p-1" : "w-28 h-20 p-2"
       )}
+      style={{
+        backgroundColor: `${genderColor}15`,
+        borderColor: `${genderColor}50`,
+      }}
       data-testid={`bird-node-${bird.id}`}
     >
       <div className="flex flex-col h-full justify-between">
         <div className="flex items-center gap-1">
-          <Bird size={size === 'small' ? 10 : 14} className={bird.gender === 'male' ? 'text-[#00BFA6]' : 'text-[#FF69B4]'} />
+          <Bird size={size === 'small' ? 10 : 14} style={{ color: genderColor }} />
           <span className={cn(
             "font-mono font-bold truncate",
             size === 'small' ? "text-[10px]" : "text-xs",
@@ -126,6 +138,7 @@ export const Genealogy = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
+  const [showNewbornsOnly, setShowNewbornsOnly] = useState(false);
 
   useEffect(() => {
     fetchBirds();
@@ -161,11 +174,18 @@ export const Genealogy = () => {
     return c ? c.name : '';
   };
 
-  // Filter birds based on search query and gender
+  // Filter birds based on search query, gender, and newborn status
   const filteredBirds = useMemo(() => {
     return birds.filter(bird => {
+      // Gender filter
       const matchesGender = genderFilter === 'all' || bird.gender === genderFilter;
-      if (!searchQuery) return matchesGender;
+      
+      // Newborns filter - birds with unknown gender OR notes containing "Newborn"
+      const isNewborn = bird.gender === 'unknown' || bird.notes?.toLowerCase().includes('newborn');
+      const matchesNewborn = !showNewbornsOnly || isNewborn;
+      
+      // Search filter
+      if (!searchQuery) return matchesGender && matchesNewborn;
       
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
@@ -174,9 +194,14 @@ export const Genealogy = () => {
         getClassName(bird.class_id)?.toLowerCase().includes(query) ||
         bird.species?.toLowerCase().includes(query);
       
-      return matchesSearch && matchesGender;
+      return matchesSearch && matchesGender && matchesNewborn;
     });
-  }, [birds, searchQuery, genderFilter]);
+  }, [birds, searchQuery, genderFilter, showNewbornsOnly]);
+  
+  // Count newborns
+  const newbornCount = useMemo(() => {
+    return birds.filter(b => b.gender === 'unknown' || b.notes?.toLowerCase().includes('newborn')).length;
+  }, [birds]);
 
   const handleSelectBird = (birdId) => {
     const bird = birds.find(b => b.id === birdId);
@@ -287,10 +312,8 @@ export const Genealogy = () => {
                             />
                             <Bird 
                               size={16} 
-                              className={cn(
-                                "mr-2",
-                                bird.gender === 'male' ? 'text-[#00BFA6]' : 'text-[#FF69B4]'
-                              )} 
+                              style={{ color: getGenderColor(bird.gender) }}
+                              className="mr-2"
                             />
                             <div className="flex-1 flex items-center gap-2">
                               <span className="font-mono font-medium">{bird.band_number}</span>
@@ -337,8 +360,30 @@ export const Genealogy = () => {
                       Females Only
                     </span>
                   </SelectItem>
+                  <SelectItem value="unknown" className="text-white hover:bg-[#1A2035]">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#FFC300]" />
+                      Unknown Gender
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Newborns Filter */}
+              <Button
+                variant={showNewbornsOnly ? "default" : "outline"}
+                onClick={() => setShowNewbornsOnly(!showNewbornsOnly)}
+                className={cn(
+                  "transition-colors",
+                  showNewbornsOnly 
+                    ? "bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90" 
+                    : "border-[#FFC300]/50 text-[#FFC300] hover:bg-[#FFC300]/10"
+                )}
+                data-testid="newborns-filter"
+              >
+                <Baby size={16} className="mr-2" />
+                Newborns ({newbornCount})
+              </Button>
 
               {/* Clear Button */}
               {selectedBird && (
