@@ -582,7 +582,7 @@ export const Birds = () => {
                         'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
                         bird.gender === 'male' 
                           ? 'bg-[#00BFA6]/20 text-[#00BFA6]' 
-                          : 'bg-[#E91E63]/20 text-[#E91E63]'
+                          : 'bg-[#FF69B4]/20 text-[#FF69B4]'
                       )}>
                         {bird.gender}
                       </span>

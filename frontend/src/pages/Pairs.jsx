@@ -299,7 +299,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
             )}
           </div>
           <div className="p-3 rounded-lg bg-[#1A2035] border border-white/5">
-            <p className="text-xs text-[#E91E63] uppercase tracking-wider font-['Barlow_Condensed'] mb-1">Female</p>
+            <p className="text-xs text-[#FF69B4] uppercase tracking-wider font-['Barlow_Condensed'] mb-1">Female</p>
             {female ? (
               <>
                 <p className="text-white font-mono text-sm">{female.band_number}</p>
