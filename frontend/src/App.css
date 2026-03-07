@@ -1,34 +1,205 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Main App Styles */
+.app-container {
+    min-height: 100vh;
+    background-color: #1A2035;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
+/* Sidebar */
+.sidebar {
+    background-color: #202940;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-item {
+    transition: all 0.2s ease;
+}
+
+.sidebar-item:hover {
+    background-color: rgba(255, 195, 0, 0.1);
+}
+
+.sidebar-item.active {
+    background-color: rgba(255, 195, 0, 0.15);
+    border-right: 2px solid #FFC300;
+}
+
+/* Cards */
+.breeding-card {
+    background-color: #202940;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.breeding-card:hover {
+    border-color: rgba(255, 195, 0, 0.5);
+}
+
+/* Cage Grid */
+.cage-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.cage-cell {
+    background-color: #202940;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.cage-cell:hover {
+    border-color: #FFC300;
+    transform: translateY(-2px);
+}
+
+.cage-cell.has-pair {
+    border-color: rgba(255, 195, 0, 0.3);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Bento Grid Dashboard */
+.bento-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(12, 1fr);
+}
+
+@media (max-width: 768px) {
+    .bento-grid {
+        grid-template-columns: 1fr;
     }
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+/* Glass Effect */
+.glass {
+    backdrop-filter: blur(12px);
+    background-color: rgba(32, 41, 64, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Form Inputs */
+.form-input {
+    background-color: #1A2035;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #E2E8F0;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    border-color: #FFC300;
+    box-shadow: 0 0 0 1px #FFC300;
+    outline: none;
+}
+
+/* Table Styles */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.data-table th {
+    background-color: #202940;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94A3B8;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.data-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.data-table tr:hover td {
+    background-color: rgba(255, 195, 0, 0.05);
+}
+
+/* Task Cards */
+.task-card {
+    position: relative;
+    padding-left: 1rem;
+}
+
+.task-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 2px;
+}
+
+.task-card.laying::before {
+    background-color: #FFC300;
+}
+
+.task-card.incubation::before {
+    background-color: #FF9800;
+}
+
+.task-card.hatching::before {
+    background-color: #00BFA6;
+}
+
+.task-card.banding::before {
+    background-color: #E91E63;
+}
+
+.task-card.weaning::before {
+    background-color: #9C27B0;
+}
+
+/* Egg Indicator */
+.egg-indicator {
+    width: 24px;
+    height: 32px;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+    font-size: 0.625rem;
+    font-weight: 600;
 }
 
-.App-link {
-    color: #61dafb;
+.egg-fresh {
+    background: linear-gradient(145deg, #FFFFFF 0%, #F0F0F0 100%);
+    color: #374151;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.egg-fertile {
+    background: linear-gradient(145deg, #FFC300 0%, #FFB300 100%);
+    color: #1A2035;
+}
+
+.egg-infertile {
+    background: linear-gradient(145deg, #94A3B8 0%, #64748B 100%);
+    color: #FFFFFF;
+}
+
+.egg-hatched {
+    background: linear-gradient(145deg, #00BFA6 0%, #00A896 100%);
+    color: #FFFFFF;
+}
+
+.egg-dead {
+    background: linear-gradient(145deg, #374151 0%, #1F2937 100%);
+    color: #94A3B8;
 }
