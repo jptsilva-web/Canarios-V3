@@ -8,6 +8,7 @@ import { Zones } from "./pages/Zones";
 import { Tasks } from "./pages/Tasks";
 import { CalendarPage } from "./pages/Calendar";
 import { Contacts } from "./pages/Contacts";
+import { Settings } from "./pages/Settings";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/contacts" element={<Contacts />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>
     </BrowserRouter>

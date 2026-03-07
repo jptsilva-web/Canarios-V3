@@ -27,34 +27,43 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { zonesApi, cagesApi, pairsApi } from '../lib/api';
+import { zonesApi, cagesApi, pairsApi, clutchesApi } from '../lib/api';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 
-const CageCell = ({ cage, pair, onClick }) => {
+// Stage colors
+const STAGE_COLORS = {
+  empty: { bg: 'bg-[#151B2B]', border: 'border-[#2A3548]', text: 'text-slate-400', color: '#64748B' },
+  laying: { bg: 'bg-[#FFC300]/20', border: 'border-[#FFC300]', text: 'text-[#FFC300]', color: '#FFC300' },
+  incubating: { bg: 'bg-[#FF9800]/20', border: 'border-[#FF9800]', text: 'text-[#FF9800]', color: '#FF9800' },
+  hatching: { bg: 'bg-[#00BFA6]/20', border: 'border-[#00BFA6]', text: 'text-[#00BFA6]', color: '#00BFA6' },
+  weaning: { bg: 'bg-[#9C27B0]/20', border: 'border-[#9C27B0]', text: 'text-[#9C27B0]', color: '#9C27B0' },
+  completed: { bg: 'bg-[#64748B]/20', border: 'border-[#64748B]', text: 'text-[#64748B]', color: '#64748B' },
+  paired: { bg: 'bg-[#00BFA6]/20', border: 'border-[#00BFA6]', text: 'text-[#00BFA6]', color: '#00BFA6' },
+};
+
+const CageCell = ({ cage, pair, clutchStatus, onClick }) => {
   const hasPair = !!pair;
+  const stage = clutchStatus || (hasPair ? 'paired' : 'empty');
+  const colors = STAGE_COLORS[stage] || STAGE_COLORS.empty;
   
   return (
     <div
       onClick={onClick}
       className={cn(
         'flex items-center justify-center rounded border transition-all cursor-pointer p-2 min-w-[40px] min-h-[40px]',
-        hasPair 
-          ? 'bg-[#FFC300]/20 border-[#FFC300] text-[#FFC300] hover:bg-[#FFC300]/30' 
-          : 'bg-[#151B2B] border-[#2A3548] hover:border-[#FFC300]/50 text-slate-400'
+        colors.bg, colors.border,
+        'hover:opacity-80'
       )}
       data-testid={`cage-${cage.id}`}
-      title={hasPair ? `Pair: ${pair.name || 'Unnamed'}` : `Cage ${cage.label} - Empty`}
+      title={hasPair ? `Pair: ${pair.name || 'Unnamed'} - ${stage}` : `Cage ${cage.label} - Empty`}
     >
       <div className="text-center">
-        <p className={cn(
-          'text-sm font-bold font-mono',
-          hasPair ? 'text-[#FFC300]' : 'text-slate-400'
-        )}>
+        <p className={cn('text-sm font-bold font-mono', colors.text)}>
           {cage.label}
         </p>
         {hasPair && (
-          <p className="text-[10px] text-[#FFC300]/70 truncate max-w-[50px]">
+          <p className={cn('text-[10px] truncate max-w-[50px]', colors.text)} style={{ opacity: 0.7 }}>
             {pair.name || 'Pair'}
           </p>
         )}
@@ -63,7 +72,7 @@ const CageCell = ({ cage, pair, onClick }) => {
   );
 };
 
-const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh, onCageClick }) => {
+const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageClick }) => {
   const [generating, setGenerating] = useState(false);
   
   const zoneCages = cages.filter(c => c.zone_id === zone.id);
@@ -87,6 +96,32 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh, onCageClick }) => {
     return pairs.find(p => p.cage_id === cageId);
   };
 
+  const getCageClutchStatus = (cageId) => {
+    const pair = getCagePair(cageId);
+    if (!pair) return null;
+    
+    // Find active clutch for this pair
+    const activeClutch = clutches.find(c => c.pair_id === pair.id && c.status !== 'completed');
+    if (!activeClutch) return null;
+    
+    return activeClutch.status;
+  };
+
+  // Count cages by status
+  const statusCounts = {
+    laying: 0,
+    incubating: 0,
+    hatching: 0,
+    weaning: 0,
+  };
+  
+  zoneCages.forEach(cage => {
+    const status = getCageClutchStatus(cage.id);
+    if (status && statusCounts[status] !== undefined) {
+      statusCounts[status]++;
+    }
+  });
+
   return (
     <Card className="bg-[#202940] border-white/5">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -94,10 +129,36 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh, onCageClick }) => {
           <CardTitle className="text-lg text-white font-['Barlow_Condensed']">
             {zone.name}
           </CardTitle>
-          <p className="text-sm text-slate-400">
-            {zone.rows} rows × {zone.columns} columns ({zoneCages.length} cages) • 
-            <span className="text-[#FFC300] ml-1">{pairedCagesCount} paired</span>
-          </p>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="text-sm text-slate-400">
+              {zone.rows}×{zone.columns} ({zoneCages.length} cages)
+            </span>
+            {pairedCagesCount > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-[#00BFA6]/20 text-[#00BFA6]">
+                {pairedCagesCount} paired
+              </span>
+            )}
+            {statusCounts.laying > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-[#FFC300]/20 text-[#FFC300]">
+                {statusCounts.laying} laying
+              </span>
+            )}
+            {statusCounts.incubating > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-[#FF9800]/20 text-[#FF9800]">
+                {statusCounts.incubating} incubating
+              </span>
+            )}
+            {statusCounts.hatching > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-[#00BFA6]/20 text-[#00BFA6]">
+                {statusCounts.hatching} hatching
+              </span>
+            )}
+            {statusCounts.weaning > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-[#9C27B0]/20 text-[#9C27B0]">
+                {statusCounts.weaning} weaning
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button
@@ -145,11 +206,13 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh, onCageClick }) => {
               .sort((a, b) => (a.row - b.row) || (a.column - b.column))
               .map((cage) => {
                 const pair = getCagePair(cage.id);
+                const clutchStatus = getCageClutchStatus(cage.id);
                 return (
                   <CageCell 
                     key={cage.id} 
                     cage={cage} 
                     pair={pair}
+                    clutchStatus={clutchStatus}
                     onClick={() => onCageClick(cage, pair)}
                   />
                 );
@@ -166,6 +229,7 @@ export const Zones = () => {
   const [zones, setZones] = useState([]);
   const [cages, setCages] = useState([]);
   const [pairs, setPairs] = useState([]);
+  const [clutches, setClutches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
@@ -178,14 +242,16 @@ export const Zones = () => {
 
   const fetchData = async () => {
     try {
-      const [zonesRes, cagesRes, pairsRes] = await Promise.all([
+      const [zonesRes, cagesRes, pairsRes, clutchesRes] = await Promise.all([
         zonesApi.getAll(),
         cagesApi.getAll(),
         pairsApi.getAll(),
+        clutchesApi.getAll(),
       ]);
       setZones(zonesRes.data);
       setCages(cagesRes.data);
       setPairs(pairsRes.data);
+      setClutches(clutchesRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
@@ -361,6 +427,7 @@ export const Zones = () => {
               zone={zone}
               cages={cages}
               pairs={pairs}
+              clutches={clutches}
               onDelete={setDeleteDialog}
               onRefresh={fetchData}
               onCageClick={handleCageClick}

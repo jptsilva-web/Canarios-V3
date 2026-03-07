@@ -212,6 +212,31 @@ class Task(BaseModel):
     due_date: str
     details: str
 
+# Settings Model
+class BreedingSettings(BaseModel):
+    days_incubation: int = 13
+    days_hatching: int = 0
+    days_banding: int = 5
+    days_separator: int = 21
+    days_weaning: int = 35
+
+# ============ SETTINGS API ============
+@api_router.get("/settings")
+async def get_settings():
+    settings = await db.settings.find_one({"type": "breeding"}, {"_id": 0})
+    if not settings:
+        return BreedingSettings().model_dump()
+    return settings
+
+@api_router.post("/settings")
+async def save_settings(input: BreedingSettings):
+    await db.settings.update_one(
+        {"type": "breeding"},
+        {"$set": {**input.model_dump(), "type": "breeding"}},
+        upsert=True
+    )
+    return {"message": "Settings saved"}
+
 # ============ ZONES API ============
 @api_router.post("/zones", response_model=Zone)
 async def create_zone(input: ZoneCreate):

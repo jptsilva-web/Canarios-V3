@@ -98,10 +98,20 @@ export const Layout = ({ children }) => {
 
         {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
-          <div className="flex items-center gap-3 px-4 py-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 cursor-pointer transition-colors">
+          <NavLink
+            to="/settings"
+            onClick={() => setSidebarOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors",
+              location.pathname === '/settings'
+                ? "text-[#FFC300] bg-[#FFC300]/15"
+                : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+            )}
+            data-testid="nav-settings"
+          >
             <Settings size={20} />
             <span className="text-sm">Settings</span>
-          </div>
+          </NavLink>
         </div>
       </aside>
 
