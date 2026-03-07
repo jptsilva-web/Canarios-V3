@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Plus, 
   Heart, 
@@ -645,6 +646,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
 
 export const Pairs = () => {
   const { t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [pairs, setPairs] = useState([]);
   const [cages, setCages] = useState([]);
   const [birds, setBirds] = useState([]);
@@ -669,6 +671,18 @@ export const Pairs = () => {
     female_id: '',
     notes: '',
   });
+
+  // Check for cage parameter from URL (coming from Zones page)
+  useEffect(() => {
+    const cageId = searchParams.get('cage');
+    if (cageId && !loading) {
+      // Pre-select the cage and open the dialog
+      setFormData(prev => ({ ...prev, cage_id: cageId }));
+      setDialogOpen(true);
+      // Clear the URL parameter
+      setSearchParams({});
+    }
+  }, [searchParams, loading, setSearchParams]);
 
   const fetchData = async () => {
     try {

@@ -550,8 +550,9 @@ export const Zones = () => {
               
               <Button
                 onClick={() => {
+                  const cageId = selectedCage?.cage?.id;
                   setSelectedCage(null);
-                  navigate('/pairs');
+                  navigate(`/pairs?cage=${cageId}`);
                 }}
                 className="w-full bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
               >
