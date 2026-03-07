@@ -285,16 +285,18 @@ async def get_cage(cage_id: str):
 # ============ BIRDS API ============
 @api_router.post("/birds", response_model=Bird)
 async def create_bird(input: BirdCreate):
-    # Validate STAM uniqueness per year
+    # Validate: birds with same band_number + band_year + gender + stam = duplicate
     if input.stam:
         existing = await db.birds.find_one({
-            "stam": input.stam,
-            "band_year": input.band_year
+            "band_number": input.band_number,
+            "band_year": input.band_year,
+            "gender": input.gender,
+            "stam": input.stam
         }, {"_id": 0})
         if existing:
             raise HTTPException(
                 status_code=400, 
-                detail=f"STAM '{input.stam}' already exists for year {input.band_year}"
+                detail=f"A bird with band {input.band_number}, year {input.band_year}, gender {input.gender}, and STAM {input.stam} already exists"
             )
     
     bird = Bird(**input.model_dump())
@@ -334,17 +336,19 @@ async def update_bird(bird_id: str, input: BirdCreate):
     if not bird:
         raise HTTPException(status_code=404, detail="Bird not found")
     
-    # Validate STAM uniqueness per year (excluding current bird)
+    # Validate: birds with same band_number + band_year + gender + stam = duplicate (excluding current bird)
     if input.stam:
         existing = await db.birds.find_one({
-            "stam": input.stam,
+            "band_number": input.band_number,
             "band_year": input.band_year,
+            "gender": input.gender,
+            "stam": input.stam,
             "id": {"$ne": bird_id}
         }, {"_id": 0})
         if existing:
             raise HTTPException(
                 status_code=400, 
-                detail=f"STAM '{input.stam}' already exists for year {input.band_year}"
+                detail=f"A bird with band {input.band_number}, year {input.band_year}, gender {input.gender}, and STAM {input.stam} already exists"
             )
     
     update_data = input.model_dump()
