@@ -30,6 +30,7 @@ import {
 import { zonesApi, cagesApi, pairsApi, clutchesApi } from '../lib/api';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
+import { useLanguage } from '../lib/LanguageContext';
 
 // Stage colors
 const STAGE_COLORS = {
@@ -72,7 +73,7 @@ const CageCell = ({ cage, pair, clutchStatus, onClick }) => {
   );
 };
 
-const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageClick }) => {
+const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageClick, t }) => {
   const [generating, setGenerating] = useState(false);
   
   const zoneCages = cages.filter(c => c.zone_id === zone.id);
@@ -226,6 +227,7 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
 
 export const Zones = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [zones, setZones] = useState([]);
   const [cages, setCages] = useState([]);
   const [pairs, setPairs] = useState([]);
@@ -431,6 +433,7 @@ export const Zones = () => {
               onDelete={setDeleteDialog}
               onRefresh={fetchData}
               onCageClick={handleCageClick}
+              t={t}
             />
           ))}
         </div>
