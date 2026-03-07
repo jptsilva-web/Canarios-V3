@@ -37,25 +37,20 @@ const CageCell = ({ cage, pair, onClick }) => {
     <div
       onClick={onClick}
       className={cn(
-        'aspect-square flex items-center justify-center rounded-lg border transition-all cursor-pointer min-h-[60px]',
+        'flex items-center justify-center rounded border transition-all cursor-pointer p-2 min-w-[40px] min-h-[40px]',
         hasPair 
-          ? 'bg-[#FFC300]/15 border-[#FFC300]/50 hover:border-[#FFC300]' 
-          : 'bg-[#1A2035] border-white/10 hover:border-[#FFC300]/50'
+          ? 'bg-[#FFC300]/20 border-[#FFC300] text-[#FFC300]' 
+          : 'bg-[#151B2B] border-[#2A3548] hover:border-[#FFC300]/50 text-slate-400'
       )}
       data-testid={`cage-${cage.id}`}
     >
       <div className="text-center">
         <p className={cn(
-          'text-lg font-bold font-mono',
+          'text-sm font-bold font-mono',
           hasPair ? 'text-[#FFC300]' : 'text-slate-400'
         )}>
           {cage.label}
         </p>
-        {hasPair && (
-          <p className="text-xs text-slate-300 mt-0.5 truncate max-w-[80px]">
-            {pair.name || 'Pair'}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -117,7 +112,7 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh }) => {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="bg-[#151B2B] rounded-lg p-4 mx-4 mb-4">
         {zoneCages.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-slate-400 mb-4">No cages generated yet</p>
@@ -134,8 +129,8 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh }) => {
           </div>
         ) : (
           <div 
-            className="grid gap-2"
-            style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
+            className="grid gap-1 overflow-x-auto"
+            style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(40px, 1fr))` }}
           >
             {zoneCages
               .sort((a, b) => (a.row - b.row) || (a.column - b.column))
@@ -266,25 +261,25 @@ export const Zones = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">Rows (Height)</Label>
+                  <Label className="text-slate-300">Rows (max 7)</Label>
                   <Input
                     type="number"
                     min="1"
-                    max="10"
+                    max="7"
                     value={formData.rows}
-                    onChange={(e) => setFormData({ ...formData, rows: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => setFormData({ ...formData, rows: Math.min(7, parseInt(e.target.value) || 1) })}
                     className="bg-[#1A2035] border-white/10 text-white"
                     data-testid="zone-rows-input"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Columns (Width)</Label>
+                  <Label className="text-slate-300">Columns (max 50)</Label>
                   <Input
                     type="number"
                     min="1"
-                    max="10"
+                    max="50"
                     value={formData.columns}
-                    onChange={(e) => setFormData({ ...formData, columns: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => setFormData({ ...formData, columns: Math.min(50, parseInt(e.target.value) || 1) })}
                     className="bg-[#1A2035] border-white/10 text-white"
                     data-testid="zone-columns-input"
                   />
