@@ -3,12 +3,14 @@ import {
   Plus, 
   Heart, 
   Egg,
+  Bird,
   Calendar,
   Edit,
   Trash2,
   ChevronRight,
   Play,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -38,9 +40,229 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '../components/ui/popover';
 import { pairsApi, cagesApi, birdsApi, clutchesApi, zonesApi } from '../lib/api';
 import { cn, formatDate, getStatusColor } from '../lib/utils';
 import { toast } from 'sonner';
+
+// Egg Status Component with click to change status
+const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
+  const [open, setOpen] = useState(false);
+  const [bandNumber, setBandNumber] = useState(egg.band_number || '');
+  const [updating, setUpdating] = useState(false);
+
+  const canChangeStatus = clutchStatus === 'incubating' || clutchStatus === 'hatching';
+  
+  const handleStatusChange = async (newStatus) => {
+    setUpdating(true);
+    try {
+      const updateData = { status: newStatus };
+      
+      if (newStatus === 'hatched') {
+        updateData.hatched_date = new Date().toISOString().split('T')[0];
+        if (bandNumber) {
+          updateData.band_number = bandNumber;
+          updateData.banded_date = new Date().toISOString().split('T')[0];
+        }
+      }
+      
+      await clutchesApi.updateEgg(clutchId, egg.id, updateData);
+      toast.success(`Egg ${index + 1} marked as ${newStatus}`);
+      setOpen(false);
+      onUpdate();
+    } catch (error) {
+      toast.error('Failed to update egg status');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleBand = async () => {
+    if (!bandNumber.trim()) {
+      toast.error('Please enter a band/ring number');
+      return;
+    }
+    
+    setUpdating(true);
+    try {
+      await clutchesApi.updateEgg(clutchId, egg.id, {
+        status: 'hatched',
+        band_number: bandNumber,
+        banded_date: new Date().toISOString().split('T')[0],
+      });
+      toast.success(`Egg ${index + 1} banded with ${bandNumber}`);
+      setOpen(false);
+      onUpdate();
+    } catch (error) {
+      toast.error('Failed to band egg');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Render hatched egg as a bird icon
+  if (egg.status === 'hatched') {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#00BFA6] text-white hover:bg-[#00BFA6]/80 transition-colors relative"
+            title={`Chick ${index + 1}: ${egg.band_number || 'Not banded'}`}
+          >
+            <Bird size={20} />
+            {egg.band_number && (
+              <span className="absolute -bottom-1 -right-1 bg-[#FFC300] text-[#1A2035] text-[8px] font-bold px-1 rounded">
+                ✓
+              </span>
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 bg-[#202940] border-white/10 p-3">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-white font-medium">Chick {index + 1}</span>
+              <span className="text-xs bg-[#00BFA6]/20 text-[#00BFA6] px-2 py-0.5 rounded">Hatched</span>
+            </div>
+            
+            {egg.band_number ? (
+              <div className="p-2 bg-[#1A2035] rounded">
+                <p className="text-xs text-slate-400">Ring Number</p>
+                <p className="text-[#FFC300] font-mono font-bold">{egg.band_number}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-slate-300 text-xs">Add Ring Number</Label>
+                <Input
+                  value={bandNumber}
+                  onChange={(e) => setBandNumber(e.target.value)}
+                  placeholder="e.g., PT2025-001"
+                  className="bg-[#1A2035] border-white/10 text-white text-sm h-8"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleBand}
+                  disabled={updating}
+                  className="w-full bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
+                >
+                  Band Chick
+                </Button>
+              </div>
+            )}
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleStatusChange('dead')}
+              disabled={updating}
+              className="w-full border-[#E91E63]/50 text-[#E91E63] hover:bg-[#E91E63]/10"
+            >
+              Mark as Dead
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  // Render dead egg/chick
+  if (egg.status === 'dead') {
+    return (
+      <div
+        className="w-8 h-10 rounded-full flex items-center justify-center bg-slate-700 text-slate-400 opacity-50"
+        style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
+        title={`Egg ${index + 1}: Dead`}
+      >
+        <X size={14} />
+      </div>
+    );
+  }
+
+  // Render egg (fresh, fertile, infertile)
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            'w-8 h-10 flex items-center justify-center text-xs font-bold transition-all hover:scale-110',
+            egg.status === 'fresh' && 'bg-white text-slate-700',
+            egg.status === 'fertile' && 'bg-[#00BFA6] text-white',
+            egg.status === 'infertile' && 'bg-[#E91E63] text-white',
+          )}
+          style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
+          title={`Egg ${index + 1}: ${egg.status} - Click to change`}
+          disabled={!canChangeStatus}
+        >
+          {index + 1}
+        </button>
+      </PopoverTrigger>
+      {canChangeStatus && (
+        <PopoverContent className="w-56 bg-[#202940] border-white/10 p-2">
+          <div className="space-y-1">
+            <p className="text-xs text-slate-400 px-2 py-1">Egg {index + 1} Status</p>
+            
+            <button
+              onClick={() => handleStatusChange('fertile')}
+              disabled={updating}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#00BFA6]/20 transition-colors"
+            >
+              <div className="w-4 h-5 bg-[#00BFA6] rounded-full" style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }} />
+              <span className="text-sm text-white">Fertile</span>
+              <span className="text-xs text-[#00BFA6] ml-auto">Green</span>
+            </button>
+            
+            <button
+              onClick={() => handleStatusChange('infertile')}
+              disabled={updating}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#E91E63]/20 transition-colors"
+            >
+              <div className="w-4 h-5 bg-[#E91E63] rounded-full" style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }} />
+              <span className="text-sm text-white">Infertile</span>
+              <span className="text-xs text-[#E91E63] ml-auto">Red</span>
+            </button>
+            
+            {clutchStatus === 'hatching' && egg.status === 'fertile' && (
+              <>
+                <hr className="border-white/10 my-1" />
+                <div className="px-2 py-1">
+                  <Label className="text-slate-300 text-xs">Ring Number (optional)</Label>
+                  <Input
+                    value={bandNumber}
+                    onChange={(e) => setBandNumber(e.target.value)}
+                    placeholder="e.g., PT2025-001"
+                    className="bg-[#1A2035] border-white/10 text-white text-sm h-8 mt-1"
+                  />
+                </div>
+                <button
+                  onClick={() => handleStatusChange('hatched')}
+                  disabled={updating}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#00BFA6]/20 transition-colors"
+                >
+                  <Bird size={16} className="text-[#00BFA6]" />
+                  <span className="text-sm text-white">Hatched (Born Alive)</span>
+                </button>
+              </>
+            )}
+            
+            <hr className="border-white/10 my-1" />
+            
+            <button
+              onClick={() => handleStatusChange('dead')}
+              disabled={updating}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-slate-700/50 transition-colors"
+            >
+              <X size={16} className="text-slate-400" />
+              <span className="text-sm text-slate-400">Dead/Remove</span>
+            </button>
+          </div>
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+};
 
 const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
   const [updating, setUpdating] = useState(false);
@@ -88,6 +310,15 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
     }
   };
 
+  // Count eggs by status
+  const eggCounts = {
+    total: clutch.eggs?.length || 0,
+    fertile: clutch.eggs?.filter(e => e.status === 'fertile').length || 0,
+    infertile: clutch.eggs?.filter(e => e.status === 'infertile').length || 0,
+    hatched: clutch.eggs?.filter(e => e.status === 'hatched').length || 0,
+    dead: clutch.eggs?.filter(e => e.status === 'dead').length || 0,
+  };
+
   return (
     <div className="p-4 rounded-lg bg-[#1A2035] border border-white/5 space-y-4">
       <div className="flex items-center justify-between">
@@ -108,24 +339,27 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
         </button>
       </div>
 
+      {/* Egg Status Legend */}
+      {(clutch.status === 'incubating' || clutch.status === 'hatching') && clutch.eggs?.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="text-slate-400">Click eggs to change status:</span>
+          <span className="text-[#00BFA6]">● Fertile</span>
+          <span className="text-[#E91E63]">● Infertile</span>
+          {clutch.status === 'hatching' && <span className="text-[#00BFA6]">🐤 Hatched</span>}
+        </div>
+      )}
+
       {/* Eggs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         {clutch.eggs?.map((egg, index) => (
-          <div
+          <EggIcon
             key={egg.id}
-            className={cn(
-              'w-8 h-10 rounded-full flex items-center justify-center text-xs font-bold',
-              egg.status === 'fresh' && 'bg-white text-slate-700',
-              egg.status === 'fertile' && 'bg-[#FFC300] text-[#1A2035]',
-              egg.status === 'infertile' && 'bg-slate-500 text-white',
-              egg.status === 'hatched' && 'bg-[#00BFA6] text-white',
-              egg.status === 'dead' && 'bg-slate-700 text-slate-400'
-            )}
-            style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
-            title={`Egg ${index + 1}: ${egg.status}`}
-          >
-            {index + 1}
-          </div>
+            egg={egg}
+            index={index}
+            clutchId={clutch.id}
+            clutchStatus={clutch.status}
+            onUpdate={onUpdate}
+          />
         ))}
         {clutch.status === 'laying' && (
           <button
@@ -138,6 +372,24 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
           </button>
         )}
       </div>
+
+      {/* Egg Summary */}
+      {clutch.eggs?.length > 0 && (clutch.status === 'incubating' || clutch.status === 'hatching' || clutch.status === 'completed') && (
+        <div className="flex gap-3 text-xs">
+          {eggCounts.fertile > 0 && (
+            <span className="text-[#00BFA6]">{eggCounts.fertile} fertile</span>
+          )}
+          {eggCounts.infertile > 0 && (
+            <span className="text-[#E91E63]">{eggCounts.infertile} infertile</span>
+          )}
+          {eggCounts.hatched > 0 && (
+            <span className="text-[#00BFA6]">{eggCounts.hatched} hatched</span>
+          )}
+          {eggCounts.dead > 0 && (
+            <span className="text-slate-500">{eggCounts.dead} dead</span>
+          )}
+        </div>
+      )}
 
       {/* Dates */}
       {clutch.expected_hatch_date && (
@@ -292,7 +544,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
             {male ? (
               <>
                 <p className="text-white font-mono text-sm">{male.band_number}</p>
-                <p className="text-xs text-slate-400">{male.color || 'No color'}</p>
+                <p className="text-xs text-slate-400">{male.stam || male.color || 'No STAM'}</p>
               </>
             ) : (
               <p className="text-slate-500 text-sm">Not assigned</p>
@@ -303,7 +555,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
             {female ? (
               <>
                 <p className="text-white font-mono text-sm">{female.band_number}</p>
-                <p className="text-xs text-slate-400">{female.color || 'No color'}</p>
+                <p className="text-xs text-slate-400">{female.stam || female.color || 'No STAM'}</p>
               </>
             ) : (
               <p className="text-slate-500 text-sm">Not assigned</p>
@@ -547,7 +799,7 @@ export const Pairs = () => {
                     <SelectContent className="bg-[#202940] border-white/10">
                       {males.map((bird) => (
                         <SelectItem key={bird.id} value={bird.id} className="text-white hover:bg-[#1A2035]">
-                          {bird.band_number} - {bird.color || 'No color'}
+                          {bird.band_number} - {bird.stam || bird.color || 'No STAM'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -565,7 +817,7 @@ export const Pairs = () => {
                     <SelectContent className="bg-[#202940] border-white/10">
                       {females.map((bird) => (
                         <SelectItem key={bird.id} value={bird.id} className="text-white hover:bg-[#1A2035]">
-                          {bird.band_number} - {bird.color || 'No color'}
+                          {bird.band_number} - {bird.stam || bird.color || 'No STAM'}
                         </SelectItem>
                       ))}
                     </SelectContent>
