@@ -249,17 +249,19 @@ async def generate_cages(zone_id: str):
     # Delete existing cages for this zone
     await db.cages.delete_many({"zone_id": zone_id})
     
-    # Generate new cages
+    # Generate new cages with sequential numbering
     cages = []
+    cage_number = 1
     for row in range(1, zone["rows"] + 1):
         for col in range(1, zone["columns"] + 1):
             cage = Cage(
                 zone_id=zone_id,
                 row=row,
                 column=col,
-                label=f"{zone['name']}-{row}{col}"
+                label=f"{cage_number}"
             )
             cages.append(cage.model_dump())
+            cage_number += 1
     
     if cages:
         await db.cages.insert_many(cages)

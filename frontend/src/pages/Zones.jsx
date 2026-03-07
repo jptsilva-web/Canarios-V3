@@ -37,17 +37,22 @@ const CageCell = ({ cage, pair, onClick }) => {
     <div
       onClick={onClick}
       className={cn(
-        'p-3 rounded-lg border transition-all cursor-pointer',
+        'aspect-square flex items-center justify-center rounded-lg border transition-all cursor-pointer min-h-[60px]',
         hasPair 
-          ? 'bg-[#FFC300]/10 border-[#FFC300]/30 hover:border-[#FFC300]' 
-          : 'bg-[#1A2035] border-white/10 hover:border-white/30'
+          ? 'bg-[#FFC300]/15 border-[#FFC300]/50 hover:border-[#FFC300]' 
+          : 'bg-[#1A2035] border-white/10 hover:border-[#FFC300]/50'
       )}
       data-testid={`cage-${cage.id}`}
     >
       <div className="text-center">
-        <p className="text-xs text-slate-400 font-mono">{cage.label}</p>
+        <p className={cn(
+          'text-lg font-bold font-mono',
+          hasPair ? 'text-[#FFC300]' : 'text-slate-400'
+        )}>
+          {cage.label}
+        </p>
         {hasPair && (
-          <p className="text-sm text-[#FFC300] font-medium mt-1 truncate">
+          <p className="text-xs text-slate-300 mt-0.5 truncate max-w-[80px]">
             {pair.name || 'Pair'}
           </p>
         )}
