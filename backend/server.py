@@ -126,6 +126,7 @@ class PairCreate(BaseModel):
 
 class PairUpdate(BaseModel):
     name: Optional[str] = None
+    cage_id: Optional[str] = None
     male_id: Optional[str] = None
     female_id: Optional[str] = None
     paired_date: Optional[str] = None

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Grid3X3,
@@ -39,10 +40,11 @@ const CageCell = ({ cage, pair, onClick }) => {
       className={cn(
         'flex items-center justify-center rounded border transition-all cursor-pointer p-2 min-w-[40px] min-h-[40px]',
         hasPair 
-          ? 'bg-[#FFC300]/20 border-[#FFC300] text-[#FFC300]' 
+          ? 'bg-[#FFC300]/20 border-[#FFC300] text-[#FFC300] hover:bg-[#FFC300]/30' 
           : 'bg-[#151B2B] border-[#2A3548] hover:border-[#FFC300]/50 text-slate-400'
       )}
       data-testid={`cage-${cage.id}`}
+      title={hasPair ? `Pair: ${pair.name || 'Unnamed'}` : `Cage ${cage.label} - Empty`}
     >
       <div className="text-center">
         <p className={cn(
@@ -51,16 +53,22 @@ const CageCell = ({ cage, pair, onClick }) => {
         )}>
           {cage.label}
         </p>
+        {hasPair && (
+          <p className="text-[10px] text-[#FFC300]/70 truncate max-w-[50px]">
+            {pair.name || 'Pair'}
+          </p>
+        )}
       </div>
     </div>
   );
 };
 
-const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh }) => {
+const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh, onCageClick }) => {
   const [generating, setGenerating] = useState(false);
   
   const zoneCages = cages.filter(c => c.zone_id === zone.id);
   const gridCols = zone.columns;
+  const pairedCagesCount = zoneCages.filter(c => pairs.find(p => p.cage_id === c.id)).length;
 
   const handleGenerateCages = async () => {
     setGenerating(true);
@@ -87,7 +95,8 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh }) => {
             {zone.name}
           </CardTitle>
           <p className="text-sm text-slate-400">
-            {zone.rows} rows × {zone.columns} columns ({zoneCages.length} cages)
+            {zone.rows} rows × {zone.columns} columns ({zoneCages.length} cages) • 
+            <span className="text-[#FFC300] ml-1">{pairedCagesCount} paired</span>
           </p>
         </div>
         <div className="flex gap-2">
@@ -134,13 +143,17 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh }) => {
           >
             {zoneCages
               .sort((a, b) => (a.row - b.row) || (a.column - b.column))
-              .map((cage) => (
-                <CageCell 
-                  key={cage.id} 
-                  cage={cage} 
-                  pair={getCagePair(cage.id)}
-                />
-              ))}
+              .map((cage) => {
+                const pair = getCagePair(cage.id);
+                return (
+                  <CageCell 
+                    key={cage.id} 
+                    cage={cage} 
+                    pair={pair}
+                    onClick={() => onCageClick(cage, pair)}
+                  />
+                );
+              })}
           </div>
         )}
       </CardContent>
@@ -149,6 +162,7 @@ const ZoneCard = ({ zone, cages, pairs, onDelete, onRefresh }) => {
 };
 
 export const Zones = () => {
+  const navigate = useNavigate();
   const [zones, setZones] = useState([]);
   const [cages, setCages] = useState([]);
   const [pairs, setPairs] = useState([]);
@@ -209,6 +223,18 @@ export const Zones = () => {
       fetchData();
     } catch (error) {
       toast.error('Failed to delete zone');
+    }
+  };
+
+  const handleCageClick = (cage, pair) => {
+    if (pair) {
+      // Navigate to pairs page if cage has a pair
+      navigate('/pairs');
+      toast.info(`Navigating to Pair: ${pair.name || 'Unnamed'}`);
+    } else {
+      // Navigate to pairs page to create a new pair for this cage
+      toast.info(`Cage ${cage.label} is empty. Go to Pairs to assign a pair.`);
+      navigate('/pairs');
     }
   };
 
@@ -328,7 +354,7 @@ export const Zones = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {zones.map((zone) => (
             <ZoneCard
               key={zone.id}
@@ -337,6 +363,7 @@ export const Zones = () => {
               pairs={pairs}
               onDelete={setDeleteDialog}
               onRefresh={fetchData}
+              onCageClick={handleCageClick}
             />
           ))}
         </div>
