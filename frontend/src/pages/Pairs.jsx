@@ -653,6 +653,14 @@ export const Pairs = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [editingPair, setEditingPair] = useState(null);
+  const [newBirdDialog, setNewBirdDialog] = useState(null); // 'male' or 'female'
+  const [newBirdData, setNewBirdData] = useState({
+    band_number: '',
+    band_year: new Date().getFullYear(),
+    gender: 'male',
+    stam: '',
+    class_id: '',
+  });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -726,6 +734,38 @@ export const Pairs = () => {
       fetchData();
     } catch (error) {
       toast.error(t('messages.pairDeleteError'));
+    }
+  };
+
+  const handleOpenNewBirdDialog = (gender) => {
+    setNewBirdData({
+      band_number: '',
+      band_year: new Date().getFullYear(),
+      gender: gender,
+      stam: '',
+      class_id: '',
+    });
+    setNewBirdDialog(gender);
+  };
+
+  const handleCreateNewBird = async () => {
+    if (!newBirdData.band_number.trim()) {
+      toast.error(t('birds.bandNumber') + ' ' + t('common.required'));
+      return;
+    }
+    try {
+      const response = await birdsApi.create(newBirdData);
+      toast.success(t('messages.birdCreated'));
+      // Update the form with the new bird
+      if (newBirdDialog === 'male') {
+        setFormData({ ...formData, male_id: response.data.id });
+      } else {
+        setFormData({ ...formData, female_id: response.data.id });
+      }
+      setNewBirdDialog(null);
+      fetchData(); // Refresh birds list
+    } catch (error) {
+      toast.error(t('messages.birdSaveError'));
     }
   };
 
@@ -807,15 +847,27 @@ export const Pairs = () => {
                   <Label className="text-slate-300">{t('common.male')}</Label>
                   <Select
                     value={formData.male_id}
-                    onValueChange={(value) => setFormData({ ...formData, male_id: value })}
+                    onValueChange={(value) => {
+                      if (value === 'create_new') {
+                        handleOpenNewBirdDialog('male');
+                      } else {
+                        setFormData({ ...formData, male_id: value });
+                      }
+                    }}
                   >
                     <SelectTrigger className="bg-[#1A2035] border-white/10 text-white" data-testid="male-select">
                       <SelectValue placeholder={t('common.male')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#202940] border-white/10">
+                      <SelectItem value="create_new" className="text-[#FFC300] hover:bg-[#1A2035] font-medium">
+                        <span className="flex items-center gap-2">
+                          <Plus size={14} /> {t('pairs.createNewBird')}
+                        </span>
+                      </SelectItem>
+                      <div className="h-px bg-white/10 my-1" />
                       {males.map((bird) => (
                         <SelectItem key={bird.id} value={bird.id} className="text-white hover:bg-[#1A2035]">
-                          {bird.band_number} - {bird.stam || bird.color || 'No STAM'}
+                          {bird.band_number} - {bird.stam || t('birds.stam')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -825,15 +877,27 @@ export const Pairs = () => {
                   <Label className="text-slate-300">{t('common.female')}</Label>
                   <Select
                     value={formData.female_id}
-                    onValueChange={(value) => setFormData({ ...formData, female_id: value })}
+                    onValueChange={(value) => {
+                      if (value === 'create_new') {
+                        handleOpenNewBirdDialog('female');
+                      } else {
+                        setFormData({ ...formData, female_id: value });
+                      }
+                    }}
                   >
                     <SelectTrigger className="bg-[#1A2035] border-white/10 text-white" data-testid="female-select">
                       <SelectValue placeholder={t('common.female')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#202940] border-white/10">
+                      <SelectItem value="create_new" className="text-[#FFC300] hover:bg-[#1A2035] font-medium">
+                        <span className="flex items-center gap-2">
+                          <Plus size={14} /> {t('pairs.createNewBird')}
+                        </span>
+                      </SelectItem>
+                      <div className="h-px bg-white/10 my-1" />
                       {females.map((bird) => (
                         <SelectItem key={bird.id} value={bird.id} className="text-white hover:bg-[#1A2035]">
-                          {bird.band_number} - {bird.stam || bird.color || 'No STAM'}
+                          {bird.band_number} - {bird.stam || t('birds.stam')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -919,6 +983,78 @@ export const Pairs = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create New Bird Dialog */}
+      <Dialog open={!!newBirdDialog} onOpenChange={() => setNewBirdDialog(null)}>
+        <DialogContent className="bg-[#202940] border-white/10 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white font-['Barlow_Condensed'] text-xl flex items-center gap-2">
+              <Bird className={newBirdDialog === 'male' ? 'text-[#00BFA6]' : 'text-[#FF69B4]'} size={20} />
+              {t('pairs.createNewBird')} ({newBirdDialog === 'male' ? t('common.male') : t('common.female')})
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300">{t('birds.bandNumber')} *</Label>
+                <Input
+                  value={newBirdData.band_number}
+                  onChange={(e) => setNewBirdData({ ...newBirdData, band_number: e.target.value })}
+                  placeholder="PT2025-001"
+                  className="bg-[#1A2035] border-white/10 text-white"
+                  data-testid="new-bird-band"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">{t('birds.year')}</Label>
+                <Input
+                  type="number"
+                  value={newBirdData.band_year}
+                  onChange={(e) => setNewBirdData({ ...newBirdData, band_year: parseInt(e.target.value) })}
+                  className="bg-[#1A2035] border-white/10 text-white"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300">{t('birds.stam')} *</Label>
+                <Input
+                  value={newBirdData.stam}
+                  onChange={(e) => setNewBirdData({ ...newBirdData, stam: e.target.value })}
+                  placeholder="STAM123"
+                  className="bg-[#1A2035] border-white/10 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">{t('birds.class')}</Label>
+                <Input
+                  value={newBirdData.class_id}
+                  onChange={(e) => setNewBirdData({ ...newBirdData, class_id: e.target.value })}
+                  placeholder="Classe"
+                  className="bg-[#1A2035] border-white/10 text-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setNewBirdDialog(null)}
+                className="flex-1 border-white/10 text-white hover:bg-white/5"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleCreateNewBird}
+                className="flex-1 bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
+                data-testid="create-new-bird-btn"
+              >
+                <Plus size={16} className="mr-2" /> {t('common.create')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
