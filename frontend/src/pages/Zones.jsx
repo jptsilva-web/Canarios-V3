@@ -43,10 +43,22 @@ const STAGE_COLORS = {
   paired: { bg: 'bg-[#00BFA6]/20', border: 'border-[#00BFA6]', text: 'text-[#00BFA6]', color: '#00BFA6' },
 };
 
-const CageCell = ({ cage, pair, clutchStatus, onClick }) => {
+const CageCell = ({ cage, pair, clutchStatus, onClick, t }) => {
   const hasPair = !!pair;
   const stage = clutchStatus || (hasPair ? 'paired' : 'empty');
   const colors = STAGE_COLORS[stage] || STAGE_COLORS.empty;
+  
+  const getStageLabel = (s) => {
+    const labels = {
+      'empty': t('zones.empty'),
+      'paired': t('zones.paired'),
+      'laying': t('pairs.clutchStatus.laying'),
+      'incubating': t('pairs.clutchStatus.incubating'),
+      'hatching': t('pairs.clutchStatus.hatching'),
+      'weaning': t('zones.weaning'),
+    };
+    return labels[s] || s;
+  };
   
   return (
     <div
@@ -57,7 +69,7 @@ const CageCell = ({ cage, pair, clutchStatus, onClick }) => {
         'hover:opacity-80'
       )}
       data-testid={`cage-${cage.id}`}
-      title={hasPair ? `Pair: ${pair.name || 'Unnamed'} - ${stage}` : `Cage ${cage.label} - Empty`}
+      title={hasPair ? `${t('pairs.title')}: ${pair.name || t('pairs.pairName')} - ${getStageLabel(stage)}` : `${t('zones.cage')} ${cage.label} - ${t('zones.empty')}`}
     >
       <div className="text-center">
         <p className={cn('text-sm font-bold font-mono', colors.text)}>
@@ -65,7 +77,7 @@ const CageCell = ({ cage, pair, clutchStatus, onClick }) => {
         </p>
         {hasPair && (
           <p className={cn('text-[10px] truncate max-w-[50px]', colors.text)} style={{ opacity: 0.7 }}>
-            {pair.name || 'Pair'}
+            {pair.name || t('pairs.pairName')}
           </p>
         )}
       </div>
@@ -132,31 +144,31 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
           </CardTitle>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className="text-sm text-slate-400">
-              {zone.rows}×{zone.columns} ({zoneCages.length} cages)
+              {zone.rows}×{zone.columns} ({zoneCages.length} {t('zones.cages')})
             </span>
             {pairedCagesCount > 0 && (
               <span className="text-xs px-2 py-0.5 rounded bg-[#00BFA6]/20 text-[#00BFA6]">
-                {pairedCagesCount} paired
+                {pairedCagesCount} {t('zones.paired')}
               </span>
             )}
             {statusCounts.laying > 0 && (
               <span className="text-xs px-2 py-0.5 rounded bg-[#FFC300]/20 text-[#FFC300]">
-                {statusCounts.laying} laying
+                {statusCounts.laying} {t('pairs.clutchStatus.laying')}
               </span>
             )}
             {statusCounts.incubating > 0 && (
               <span className="text-xs px-2 py-0.5 rounded bg-[#FF9800]/20 text-[#FF9800]">
-                {statusCounts.incubating} incubating
+                {statusCounts.incubating} {t('pairs.clutchStatus.incubating')}
               </span>
             )}
             {statusCounts.hatching > 0 && (
               <span className="text-xs px-2 py-0.5 rounded bg-[#00BFA6]/20 text-[#00BFA6]">
-                {statusCounts.hatching} hatching
+                {statusCounts.hatching} {t('pairs.clutchStatus.hatching')}
               </span>
             )}
             {statusCounts.weaning > 0 && (
               <span className="text-xs px-2 py-0.5 rounded bg-[#9C27B0]/20 text-[#9C27B0]">
-                {statusCounts.weaning} weaning
+                {statusCounts.weaning} {t('zones.weaning')}
               </span>
             )}
           </div>
@@ -186,7 +198,7 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
       <CardContent className="bg-[#151B2B] rounded-lg p-4 mx-4 mb-4">
         {zoneCages.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-slate-400 mb-4">No cages generated yet</p>
+            <p className="text-slate-400 mb-4">{t('zones.noCages')}</p>
             <Button
               onClick={handleGenerateCages}
               disabled={generating}
@@ -195,7 +207,7 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
               data-testid={`generate-cages-${zone.id}`}
             >
               <RefreshCw size={16} className={cn("mr-2", generating && "animate-spin")} />
-              Generate Cages
+              {t('zones.generateCages')}
             </Button>
           </div>
         ) : (
@@ -215,6 +227,7 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
                     pair={pair}
                     clutchStatus={clutchStatus}
                     onClick={() => onCageClick(cage, pair)}
+                    t={t}
                   />
                 );
               })}
@@ -298,10 +311,10 @@ export const Zones = () => {
     if (pair) {
       // Navigate to pairs page if cage has a pair
       navigate('/pairs');
-      toast.info(`${t('messages.navigatingToPair')}: ${pair.name || 'Unnamed'}`);
+      toast.info(`${t('zones.cage')} ${cage.label}: ${pair.name || t('pairs.pairName')}`);
     } else {
       // Navigate to pairs page to create a new pair for this cage
-      toast.info(`${cage.label} ${t('messages.cageEmpty')}`);
+      toast.info(`${t('zones.cage')} ${cage.label}: ${t('zones.empty')}`);
       navigate('/pairs');
     }
   };
@@ -320,10 +333,10 @@ export const Zones = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-            Zones & Cages
+            {t('zones.title')}
           </h1>
           <p className="text-slate-400 mt-1">
-            Configure your aviary layout
+            {t('zones.subtitle')}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -332,22 +345,22 @@ export const Zones = () => {
               className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90 font-bold"
               data-testid="add-zone-btn"
             >
-              <Plus size={20} className="mr-2" /> Add Zone
+              <Plus size={20} className="mr-2" /> {t('zones.addZone')}
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-[#202940] border-white/10 text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-['Barlow_Condensed']">
-                Add New Zone
+                {t('zones.addZone')}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label className="text-slate-300">Zone Name</Label>
+                <Label className="text-slate-300">{t('zones.zoneName')}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Module 1"
+                  placeholder="e.g., Modulo 1"
                   className="bg-[#1A2035] border-white/10 text-white"
                   required
                   data-testid="zone-name-input"
@@ -355,7 +368,7 @@ export const Zones = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">Rows (max 7)</Label>
+                  <Label className="text-slate-300">{t('zones.rows')} (max 7)</Label>
                   <Input
                     type="number"
                     min="1"
@@ -367,7 +380,7 @@ export const Zones = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Columns (max 50)</Label>
+                  <Label className="text-slate-300">{t('zones.columns')} (max 50)</Label>
                   <Input
                     type="number"
                     min="1"
@@ -380,7 +393,7 @@ export const Zones = () => {
                 </div>
               </div>
               <p className="text-sm text-slate-400">
-                This will create {formData.rows * formData.columns} cages
+                {formData.rows * formData.columns} {t('zones.cages')}
               </p>
               <div className="flex gap-3 pt-4">
                 <Button
@@ -389,14 +402,14 @@ export const Zones = () => {
                   onClick={() => setDialogOpen(false)}
                   className="flex-1 border-white/10 text-white hover:bg-white/5"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
                   data-testid="save-zone-btn"
                 >
-                  Create Zone
+                  {t('common.create')}
                 </Button>
               </div>
             </form>
@@ -409,15 +422,15 @@ export const Zones = () => {
         <Card className="bg-[#202940] border-white/5">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Grid3X3 className="w-16 h-16 text-slate-500 mb-4" />
-            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">No Zones Yet</h3>
+            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">{t('zones.noZones')}</h3>
             <p className="text-slate-400 text-center max-w-md mb-6">
-              Create zones to represent different areas or modules in your aviary. Each zone contains a grid of cages.
+              {t('zones.noZones')}
             </p>
             <Button 
               onClick={() => setDialogOpen(true)}
               className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
             >
-              <Plus size={20} className="mr-2" /> Create Your First Zone
+              <Plus size={20} className="mr-2" /> {t('zones.addZone')}
             </Button>
           </CardContent>
         </Card>
@@ -443,22 +456,21 @@ export const Zones = () => {
       <AlertDialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
         <AlertDialogContent className="bg-[#202940] border-white/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Zone?</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">{t('zones.deleteZone')}?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-400">
-              This will permanently delete this zone and all its cages. Pairs assigned to these cages will 
-              need to be reassigned.
+              {t('zones.deleteZone')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-white/10 text-white hover:bg-white/5">
-              Cancel
+              {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete}
               className="bg-[#E91E63] text-white hover:bg-[#E91E63]/90"
               data-testid="confirm-delete-zone"
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

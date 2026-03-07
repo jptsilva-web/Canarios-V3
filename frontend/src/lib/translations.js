@@ -229,8 +229,13 @@ export const translations = {
       deleteZone: 'Eliminar Zona',
       noZones: 'Nenhuma zona registada',
       cageNumber: 'Gaiola',
+      cage: 'Gaiola',
+      cages: 'gaiolas',
       empty: 'Vazia',
       occupied: 'Ocupada',
+      paired: 'emparelhada',
+      noCages: 'Nenhuma gaiola gerada ainda',
+      weaning: 'Desmame',
     },
     // Calendar
     calendar: {
@@ -624,8 +629,13 @@ export const translations = {
       deleteZone: 'Delete Zone',
       noZones: 'No zones registered',
       cageNumber: 'Cage',
+      cage: 'Cage',
+      cages: 'cages',
       empty: 'Empty',
       occupied: 'Occupied',
+      paired: 'paired',
+      noCages: 'No cages generated yet',
+      weaning: 'Weaning',
     },
     // Calendar
     calendar: {
@@ -1019,8 +1029,13 @@ export const translations = {
       deleteZone: 'Eliminar Zona',
       noZones: 'Ninguna zona registrada',
       cageNumber: 'Jaula',
+      cage: 'Jaula',
+      cages: 'jaulas',
       empty: 'Vacía',
       occupied: 'Ocupada',
+      paired: 'emparejada',
+      noCages: 'Ninguna jaula generada aún',
+      weaning: 'Destete',
     },
     // Calendar
     calendar: {
