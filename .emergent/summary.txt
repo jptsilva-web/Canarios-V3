@@ -1,0 +1,171 @@
+<analysis>**original_problem_statement:**
+The user wants to create a Canary Breeding Management Application, similar to a system shown in a YouTube video (Orniplus). The application should run locally and manage the entire breeding process.
+
+**PRODUCT REQUIREMENTS:**
+- **Dashboard**: A central view with key statistics, daily tasks, and recent activity.
+- **Zone & Cage Management**: Visually create and manage zones with a grid of cages. Cages are color-coded based on breeding status.
+- **Bird Registry**: A database of all birds with unique band numbers, year, gender, STAM, and Class.
+- **Pair Management**: Create breeding pairs by assigning birds to a cage.
+- **Clutch & Egg Tracking**: Track clutches and the status of individual eggs (laid, fertile, infertile, hatched). Hatched eggs should show the band number.
+- **Newborns Page**: A list of newly banded chicks with their details.
+- **Task Management**: A calendar for automatically generated and manually added tasks.
+- **Email Notifications**: All tasks should trigger an email notification.
+- **Settings Page**: Configure breeding cycle timings and email settings.
+- **Genealogy**: A family tree visualization for each bird.
+- **Statistics & Reports**: A page with detailed breeding statistics, performance trends, and year-over-year comparisons.
+- **Data Export**: Ability to export data to CSV/PDF.
+- **Multi-language Support**: The application should be translatable into Portuguese, English, and Spanish, with a visual flag selector.
+- **Season Management**: The ability to manage data by breeding season/year.
+- **Printable Breeding Cards**: Generate printable cards for each breeding pair.
+
+**User's preferred language**: Portuguese (The user has been communicating primarily in Portuguese. The next agent MUST respond in Portuguese.)
+
+**what currently exists?**
+A full-stack Canary Breeding Management application using FastAPI, React, and MongoDB. The application is feature-rich and includes:
+- A multi-language system supporting English, Portuguese, and Spanish, with a round-flag UI selector. The translations have been applied to most major pages.
+- A comprehensive dashboard, zone/cage management, a detailed bird registry, and pair management.
+- Interactive egg status tracking (fertile, infertile, hatched) with the band number displayed for hatched chicks.
+- A functional email notification system for tasks, configured via the settings page using a Gmail App Password.
+- A genealogy page with a family tree visualization and a searchable bird selector that includes a Newborns filter.
+- A reports page with detailed breeding statistics, data export (CSV/PDF), and a monthly performance trends chart.
+- Automatic creation of a newborn bird record (with gender 'unknown') when an egg is hatched and assigned a band number. The UI supports updating the newborn's gender and other details later.
+- The initial groundwork for season management has been laid (backend models, API endpoints, and frontend pages).
+
+**Last working item**:
+- **Last item agent was working**: The agent was implementing three user-requested features:
+    1.  **Season Management**: Create a system to manage data by breeding season/year.
+    2.  **Printable Breeding Cards**: Create a new page to generate printable cards for pairs.
+    3.  **Year-over-Year Comparison**: Add a comparison chart to the reports page.
+    The agent created the backend models () and API endpoints (), added  to the  and  models, and created placeholder frontend pages (, ) and a component (). Routes and navigation links were also added.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: both. The backend needs testing via  for the new  endpoints and verification that other endpoints now correctly handle . The frontend requires the testing agent to verify the new pages (, ) and the  component are fully functional.
+- **User Testing Done**: N
+
+**All Pending/In progress Issue list**:
+- There are no pending issues reported by the user. The priority is to complete the in-progress task.
+
+**In progress Task List**:
+- **Task 1: Complete Season Management, Printable Cards, and Year-over-Year Comparison (P0)**
+    - **Description**: The groundwork has been laid for these three features, but the core logic and UI are incomplete. This is a significant architectural change as all breeding data must now be scoped to a season.
+    - **Where to resume**:
+        1.  **Backend Refinement**: The agent added  to the Pydantic models but did not update the API endpoints (, , , etc.) to filter data based on a selected season or to require a  upon creation. This is a critical next step.
+        2.  **Global Season Selector**: Implement a global UI component (e.g., in the  or header) that allows the user to select the active breeding season. This selection should control which data is displayed throughout the entire application.
+        3.  **Seasons Page ()**: Implement the UI to list, create, and manage breeding seasons using the  endpoint.
+        4.  **Printable Breeding Cards ()**: Design and implement the printable card layout. The page should allow selecting pairs from the active season and generate a clean, print-friendly view (using  CSS). It should fetch all necessary data for the pair (parents, clutch details, egg statuses).
+        5.  **Year-over-Year Comparison ()**: Implement the component to fetch statistics for multiple seasons and display them in a comparative chart/table on the  page.
+    - **What will be achieved with this?**: The application will support multi-year breeding management, allowing users to organize and compare their data across different seasons, a core requirement for serious breeders.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: both
+    - **Blocked on something**: None
+
+**Upcoming and Future Tasks**
+- **Upcoming Tasks**:
+    - **Complete Translations (P1)**: While major pages are translated, many smaller components, dialogs, form labels, and error messages are still hardcoded in English. A full pass is needed to apply the  function from  everywhere.
+- **Future Tasks**:
+    - **IIS Compatibility (P2)**: The user initially mentioned wanting to run the application with IIS. This requirement has not been addressed. The agent should clarify with the user if this is still a goal, as the current stack (FastAPI/React on Linux) is not directly compatible and would require significant architectural changes or a different deployment strategy.
+
+**Completed work in this session**
+- **Interactive Egg Status**: Implemented clickable eggs on the  page to cycle status between laid, fertile, infertile, and hatched.
+- **Email Notification System**: Fully implemented and tested email notifications for manual tasks using user-provided Gmail App Password. The settings page was updated to securely manage these credentials.
+- **Genealogy & Family Tree**: Created a  page with a visual tree, a searchable bird selector, and automatic parent assignment for newborns.
+- **Newborn Management**: Automated the creation of a bird record when an egg hatches. Added a Newborns filter and UI to update a newborn's gender and details.
+- **Advanced Reporting**: Created a  page with detailed breeding statistics, export to CSV/PDF, and a monthly performance trends chart.
+- **Multi-language Support**: Integrated a full translation system for English, Portuguese, and Spanish, complete with a UI selector using round flag images.
+- **UI/UX Enhancements**:
+    - Displayed the band number below the bird icon for hatched chicks.
+    - Replaced flag emojis with high-quality circular image assets.
+
+**Earlier issues found/mentioned but not fixed**
+- None.
+
+**Known issue recurrence from previous fork**
+- None.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+- **Backend**: FastAPI, Pydantic, Motor (async MongoDB driver)
+- **Frontend**: React, , , TailwindCSS, Shadcn/UI, 
+- **Internationalization (i18n)**:  and  for translations.
+- **Database**: MongoDB
+
+**key DB schema**
+- **seasons**:  (new)
+- **birds**:  (season_id added)
+- **pairs**:  (season_id added)
+- **clutches**:  (season_id added)
+- **eggs**: 
+
+**changes in tech stack**
+- Added  and  for internationalization.
+
+**All files of reference**
+- : Heavily modified. Contains all backend logic. Needs updates to enforce season-scoping.
+- : New file for i18next configuration.
+- : New file for language context.
+- : New directory containing , , .
+- : New file, needs implementation.
+- : New file, needs implementation.
+- : New file, needs implementation.
+- : Modified to include the language selector and new navigation links.
+- All page components (, , etc.) were modified to use the translation hook .
+
+**Areas that need refactoring**:
+-  is very large. Consider splitting it into a modular structure with separate files for routes (routers), database models, and business logic (services).
+- Many API calls in the frontend do not yet account for the active season. A global refactor will be needed to pass the  to the backend for almost all data-related requests.
+
+**key api endpoints**
+-  (new)
+-  (new)
+- 
+- 
+- 
+- 
+-  (now creates a bird on hatching)
+
+**Critical Info for New Agent**
+- **Speak Portuguese**: The user is communicating in Portuguese. You must continue the conversation in Portuguese.
+- **Season-Scoped Architecture**: The most critical task is to finish the Season Management implementation. This is not just a new feature but a fundamental change to how data is organized and queried. Every data point (birds, pairs, clutches) must be associated with a season, and the UI must filter content based on the user's selected season. The agent started this by adding  to models but did not enforce it in the API logic.
+- **User Credentials**: The user provided a Gmail App Password:  for . This is functional and should be used for any email-related testing.
+
+**documents and test reports created in this job**
+-  (updated multiple times)
+- 
+- 
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **Request**: Create every season year in the database, add printable breeding cards, and add year-over-year comparison. (IN PROGRESS)
+2.  **Request**: put the round flags image im the bottons language (COMPLETED)
+3.  **Request**: Complete translations for remaining pages, implement breeding performance trends chart, and add the ability to update a newborn's gender. (COMPLETED)
+4.  **Issue**: in family tree the newboard dont appear to select with there tree, why ? in filter we should filter too to show only the newborns too (COMPLETED)
+5.  **Request**: can you por 3 flags and translate to them the all site ? portugues from portugal english actual language and spanish ? (COMPLETED)
+6.  **Request**: in breeding pairs when i ring a new bird the number should apear above or beneath the bird icon the better way (COMPLETED)
+7.  **Request**: Add search functionality in genealogy page. (COMPLETED)
+8.  **Request**: Add bird genealogy/family tree visualization, implement breeding statistics and reports, and add data export (CSV/PDF). (COMPLETED)
+9.  **Feedback**: User provided Gmail App Password:  (ACKNOWLEDGED & IMPLEMENTED)
+10. **Confirmation**: User asked to proceed with implementing interactive egg status and email notifications. (COMPLETED)
+
+**Project Health Check:**
+- **Broken**:
+    - Season Management, Printable Breeding Cards, and Year-over-Year comparison features are incomplete. Pages and components exist but lack functionality.
+    - Data is not yet filtered by season, which is a major inconsistency with the newly added models.
+- **Mocked**: None.
+
+**3rd Party Integrations**
+- **Gmail (for Email Notifications)**: Uses the  Python library. This integration is complete and functional.
+- **i18next / react-i18next**: Used for internationalization. This is a new dependency added in this session.
+
+**Testing status**
+- **Testing agent used after significant changes**: YES (used for the genealogy, reporting, and export features).
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: None.
+- **Known regressions**: None.
+
+**Credentials to test flow:**
+- **Email**: 
+- **Gmail App Password**: 
+
+**What agent forgot to execute**
+- The agent started the large task of implementing Season Management but did not complete it. Crucially, the existing API endpoints for creating and fetching data (like pairs, clutches, birds) were not updated to use the new , meaning the new data model is not yet enforced by the backend logic. This must be addressed to make the feature functional.</analysis>

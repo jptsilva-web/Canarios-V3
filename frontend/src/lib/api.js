@@ -74,6 +74,7 @@ export const dashboardApi = {
 export const reportsApi = {
   getBreedingStats: () => api.get('/reports/breeding-stats'),
   getBreedingTrends: () => api.get('/reports/breeding-trends'),
+  getYearComparison: (year1, year2) => api.get(`/reports/year-comparison?year1=${year1}&year2=${year2}`),
 };
 
 // Genealogy API
@@ -87,6 +88,21 @@ export const exportApi = {
   birdsPDF: () => `${API_BASE}/export/birds/pdf`,
   breedingReportCSV: () => `${API_BASE}/export/breeding-report/csv`,
   breedingReportPDF: () => `${API_BASE}/export/breeding-report/pdf`,
+};
+
+// Seasons API
+export const seasonsApi = {
+  getAll: () => api.get('/seasons'),
+  create: (data) => api.post('/seasons', data),
+  update: (id, data) => api.put(`/seasons/${id}`, data),
+  delete: (id) => api.delete(`/seasons/${id}`),
+  getActive: () => api.get('/seasons/active'),
+  activate: (id) => api.post(`/seasons/${id}/activate`),
+};
+
+// Print API
+export const printApi = {
+  getBreedingCards: () => api.get('/print/breeding-cards'),
 };
 
 export default api;

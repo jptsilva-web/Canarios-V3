@@ -54,6 +54,26 @@ class EggStatus(str, Enum):
     HATCHED = "hatched"
     DEAD = "dead"
 
+# Season/Year Model
+class Season(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    year: int
+    name: str  # e.g., "2024", "2024/2025", "Breeding Season 2024"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    is_active: bool = False
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class SeasonCreate(BaseModel):
+    year: int
+    name: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    is_active: bool = False
+    notes: Optional[str] = None
+
 # Models
 class Zone(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -123,6 +143,7 @@ class Pair(BaseModel):
     female_id: Optional[str] = None
     paired_date: Optional[str] = None
     is_active: bool = True
+    season_id: Optional[str] = None
     notes: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -132,6 +153,7 @@ class PairCreate(BaseModel):
     male_id: Optional[str] = None
     female_id: Optional[str] = None
     paired_date: Optional[str] = None
+    season_id: Optional[str] = None
     notes: Optional[str] = None
 
 class PairUpdate(BaseModel):
@@ -1313,6 +1335,182 @@ async def export_breeding_report_pdf():
 @api_router.get("/")
 async def root():
     return {"message": "Canary Breeding Control API", "version": "1.0.0"}
+
+# ============ SEASONS API ============
+@api_router.get("/seasons", response_model=List[Season])
+async def get_seasons():
+    seasons = await db.seasons.find({}, {"_id": 0}).to_list(100)
+    return seasons
+
+@api_router.post("/seasons", response_model=Season)
+async def create_season(input: SeasonCreate):
+    # If this season is set as active, deactivate all others
+    if input.is_active:
+        await db.seasons.update_many({}, {"$set": {"is_active": False}})
+    
+    season = Season(**input.model_dump())
+    await db.seasons.insert_one(season.model_dump())
+    return season
+
+@api_router.put("/seasons/{season_id}", response_model=Season)
+async def update_season(season_id: str, input: SeasonCreate):
+    # If this season is set as active, deactivate all others
+    if input.is_active:
+        await db.seasons.update_many({"id": {"$ne": season_id}}, {"$set": {"is_active": False}})
+    
+    await db.seasons.update_one(
+        {"id": season_id},
+        {"$set": input.model_dump()}
+    )
+    updated = await db.seasons.find_one({"id": season_id}, {"_id": 0})
+    if not updated:
+        raise HTTPException(status_code=404, detail="Season not found")
+    return updated
+
+@api_router.delete("/seasons/{season_id}")
+async def delete_season(season_id: str):
+    result = await db.seasons.delete_one({"id": season_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Season not found")
+    return {"message": "Season deleted"}
+
+@api_router.get("/seasons/active")
+async def get_active_season():
+    """Get the currently active season"""
+    season = await db.seasons.find_one({"is_active": True}, {"_id": 0})
+    if not season:
+        # Return current year as default if no active season
+        current_year = datetime.now().year
+        return {"year": current_year, "name": str(current_year), "is_active": True}
+    return season
+
+@api_router.post("/seasons/{season_id}/activate")
+async def activate_season(season_id: str):
+    """Set a season as the active one"""
+    # Deactivate all seasons
+    await db.seasons.update_many({}, {"$set": {"is_active": False}})
+    # Activate the selected one
+    result = await db.seasons.update_one({"id": season_id}, {"$set": {"is_active": True}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Season not found")
+    return {"message": "Season activated"}
+
+# ============ YEAR-OVER-YEAR COMPARISON API ============
+@api_router.get("/reports/year-comparison")
+async def get_year_comparison(year1: int = None, year2: int = None):
+    """Compare breeding statistics between two years"""
+    current_year = datetime.now().year
+    year1 = year1 or current_year - 1
+    year2 = year2 or current_year
+    
+    async def get_year_stats(year: int):
+        # Get clutches for the year
+        clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+        year_clutches = [c for c in clutches if c.get("start_date", "").startswith(str(year))]
+        
+        total_eggs = 0
+        fertile_eggs = 0
+        hatched_eggs = 0
+        infertile_eggs = 0
+        
+        for clutch in year_clutches:
+            for egg in clutch.get("eggs", []):
+                total_eggs += 1
+                status = egg.get("status", "fresh")
+                if status == "fertile":
+                    fertile_eggs += 1
+                elif status == "hatched":
+                    hatched_eggs += 1
+                    fertile_eggs += 1
+                elif status == "infertile":
+                    infertile_eggs += 1
+        
+        fertility_rate = (fertile_eggs / total_eggs * 100) if total_eggs > 0 else 0
+        hatch_rate = (hatched_eggs / fertile_eggs * 100) if fertile_eggs > 0 else 0
+        
+        # Get pairs for the year
+        pairs = await db.pairs.find({}, {"_id": 0}).to_list(10000)
+        year_pairs = [p for p in pairs if p.get("created_at", "").startswith(str(year)) or p.get("season_id") == str(year)]
+        
+        # Get birds born in this year
+        birds = await db.birds.find({"band_year": year}, {"_id": 0}).to_list(10000)
+        
+        return {
+            "year": year,
+            "total_pairs": len(year_pairs) if year_pairs else len([p for p in pairs if p.get("is_active")]),
+            "total_clutches": len(year_clutches),
+            "total_eggs": total_eggs,
+            "fertile_eggs": fertile_eggs,
+            "hatched_eggs": hatched_eggs,
+            "infertile_eggs": infertile_eggs,
+            "fertility_rate": round(fertility_rate, 1),
+            "hatch_rate": round(hatch_rate, 1),
+            "birds_born": len(birds)
+        }
+    
+    stats1 = await get_year_stats(year1)
+    stats2 = await get_year_stats(year2)
+    
+    return {
+        "year1": stats1,
+        "year2": stats2,
+        "comparison": {
+            "eggs_diff": stats2["total_eggs"] - stats1["total_eggs"],
+            "hatched_diff": stats2["hatched_eggs"] - stats1["hatched_eggs"],
+            "fertility_diff": round(stats2["fertility_rate"] - stats1["fertility_rate"], 1),
+            "hatch_rate_diff": round(stats2["hatch_rate"] - stats1["hatch_rate"], 1)
+        }
+    }
+
+# ============ PRINTABLE BREEDING CARDS API ============
+@api_router.get("/print/breeding-cards")
+async def get_breeding_cards_data():
+    """Get data for printable breeding cards"""
+    pairs = await db.pairs.find({"is_active": True}, {"_id": 0}).to_list(1000)
+    birds = await db.birds.find({}, {"_id": 0}).to_list(10000)
+    cages = await db.cages.find({}, {"_id": 0}).to_list(10000)
+    zones = await db.zones.find({}, {"_id": 0}).to_list(100)
+    clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+    
+    birds_dict = {b["id"]: b for b in birds}
+    cages_dict = {c["id"]: c for c in cages}
+    zones_dict = {z["id"]: z for z in zones}
+    
+    cards = []
+    for pair in pairs:
+        male = birds_dict.get(pair.get("male_id"), {})
+        female = birds_dict.get(pair.get("female_id"), {})
+        cage = cages_dict.get(pair.get("cage_id"), {})
+        zone = zones_dict.get(cage.get("zone_id"), {}) if cage else {}
+        
+        # Get clutches for this pair
+        pair_clutches = [c for c in clutches if c.get("pair_id") == pair["id"]]
+        total_eggs = sum(len(c.get("eggs", [])) for c in pair_clutches)
+        hatched = sum(1 for c in pair_clutches for e in c.get("eggs", []) if e.get("status") == "hatched")
+        
+        cards.append({
+            "pair_id": pair["id"],
+            "pair_name": pair.get("name") or f"Pair {pair['id'][:6]}",
+            "cage_label": cage.get("label", "N/A"),
+            "zone_name": zone.get("name", "N/A"),
+            "male": {
+                "band_number": male.get("band_number", "N/A"),
+                "stam": male.get("stam", "-"),
+                "year": male.get("band_year", "-"),
+            },
+            "female": {
+                "band_number": female.get("band_number", "N/A"),
+                "stam": female.get("stam", "-"),
+                "year": female.get("band_year", "-"),
+            },
+            "paired_date": pair.get("paired_date", "N/A"),
+            "clutches": len(pair_clutches),
+            "total_eggs": total_eggs,
+            "hatched": hatched,
+            "is_active": pair.get("is_active", True),
+        })
+    
+    return cards
 
 # Include the router in the main app
 app.include_router(api_router)

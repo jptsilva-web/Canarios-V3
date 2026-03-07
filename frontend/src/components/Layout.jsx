@@ -15,7 +15,9 @@ import {
   ChevronRight,
   BarChart3,
   GitBranch,
-  Globe
+  Globe,
+  CalendarDays,
+  Printer
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Toaster } from './ui/sonner';
@@ -36,6 +38,8 @@ const getNavItems = (t) => [
   { path: '/calendar', icon: Calendar, label: t('nav.calendar'), key: 'calendar' },
   { path: '/newborn', icon: Baby, label: t('nav.newborn'), key: 'newborn' },
   { path: '/reports', icon: BarChart3, label: t('nav.reports'), key: 'reports' },
+  { path: '/seasons', icon: CalendarDays, label: t('seasons.title'), key: 'seasons' },
+  { path: '/print-cards', icon: Printer, label: t('printCards.title'), key: 'print-cards' },
   { path: '/contacts', icon: Users, label: t('nav.contacts'), key: 'contacts' },
   { path: '/settings', icon: Settings, label: t('nav.settings'), key: 'settings' },
 ];

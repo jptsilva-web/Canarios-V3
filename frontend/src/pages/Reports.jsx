@@ -10,13 +10,15 @@ import {
   Target,
   Activity,
   CheckCircle,
-  LineChart
+  LineChart,
+  ArrowLeftRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { reportsApi, exportApi } from '../lib/api';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
+import { cn } from '../lib/utils';
 
 const StatCard = ({ icon: Icon, label, value, subValue, color, trend }) => (
   <Card className="bg-[#202940] border-white/5">
@@ -177,6 +179,156 @@ const TrendChart = ({ data, t }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Year Comparison Component
+const YearComparison = ({ t }) => {
+  const currentYear = new Date().getFullYear();
+  const [year1, setYear1] = useState(currentYear - 1);
+  const [year2, setYear2] = useState(currentYear);
+  const [comparison, setComparison] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchComparison = async () => {
+    setLoading(true);
+    try {
+      const res = await reportsApi.getYearComparison(year1, year2);
+      setComparison(res.data);
+    } catch (error) {
+      console.error('Error fetching comparison:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComparison();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year1, year2]);
+
+  const ComparisonRow = ({ label, val1, val2, diff, unit = '', inverse = false }) => {
+    const isPositive = inverse ? diff < 0 : diff > 0;
+    const isNegative = inverse ? diff > 0 : diff < 0;
+    return (
+      <div className="flex items-center justify-between py-2 border-b border-white/5">
+        <span className="text-slate-400">{label}</span>
+        <div className="flex items-center gap-4">
+          <span className="text-white font-mono w-16 text-right">{val1}{unit}</span>
+          <span className="text-white font-mono w-16 text-right">{val2}{unit}</span>
+          <span className={cn(
+            "font-mono w-20 text-right",
+            isPositive && "text-[#00BFA6]",
+            isNegative && "text-[#E91E63]",
+            diff === 0 && "text-slate-500"
+          )}>
+            {diff > 0 ? '+' : ''}{diff}{unit}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="bg-[#202940] border-white/5">
+      <CardHeader>
+        <CardTitle className="text-lg font-['Barlow_Condensed'] text-white uppercase tracking-wider flex items-center gap-2">
+          <ArrowLeftRight size={20} className="text-[#FF9800]" />
+          Year-over-Year Comparison
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Year Selectors */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-1">
+            <label className="text-xs text-slate-400 mb-1 block">Year 1</label>
+            <select
+              value={year1}
+              onChange={(e) => setYear1(parseInt(e.target.value))}
+              className="w-full bg-[#1A2035] border border-white/10 rounded-md px-3 py-2 text-white"
+            >
+              {[...Array(6)].map((_, i) => (
+                <option key={i} value={currentYear - 5 + i}>{currentYear - 5 + i}</option>
+              ))}
+            </select>
+          </div>
+          <div className="text-slate-500 pt-5">vs</div>
+          <div className="flex-1">
+            <label className="text-xs text-slate-400 mb-1 block">Year 2</label>
+            <select
+              value={year2}
+              onChange={(e) => setYear2(parseInt(e.target.value))}
+              className="w-full bg-[#1A2035] border border-white/10 rounded-md px-3 py-2 text-white"
+            >
+              {[...Array(6)].map((_, i) => (
+                <option key={i} value={currentYear - 5 + i}>{currentYear - 5 + i}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FFC300]" />
+          </div>
+        ) : comparison ? (
+          <div className="space-y-1">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs text-slate-500">
+              <span>Metric</span>
+              <div className="flex items-center gap-4">
+                <span className="w-16 text-right">{year1}</span>
+                <span className="w-16 text-right">{year2}</span>
+                <span className="w-20 text-right">Change</span>
+              </div>
+            </div>
+
+            <ComparisonRow 
+              label="Total Clutches" 
+              val1={comparison.year1.total_clutches} 
+              val2={comparison.year2.total_clutches}
+              diff={comparison.year2.total_clutches - comparison.year1.total_clutches}
+            />
+            <ComparisonRow 
+              label={t('reports.totalEggs')}
+              val1={comparison.year1.total_eggs} 
+              val2={comparison.year2.total_eggs}
+              diff={comparison.comparison.eggs_diff}
+            />
+            <ComparisonRow 
+              label={t('reports.hatchedChicks')}
+              val1={comparison.year1.hatched_eggs} 
+              val2={comparison.year2.hatched_eggs}
+              diff={comparison.comparison.hatched_diff}
+            />
+            <ComparisonRow 
+              label={t('reports.fertilityRate')}
+              val1={comparison.year1.fertility_rate} 
+              val2={comparison.year2.fertility_rate}
+              diff={comparison.comparison.fertility_diff}
+              unit="%"
+            />
+            <ComparisonRow 
+              label={t('reports.hatchRate')}
+              val1={comparison.year1.hatch_rate} 
+              val2={comparison.year2.hatch_rate}
+              diff={comparison.comparison.hatch_rate_diff}
+              unit="%"
+            />
+            <ComparisonRow 
+              label="Birds Born"
+              val1={comparison.year1.birds_born} 
+              val2={comparison.year2.birds_born}
+              diff={comparison.year2.birds_born - comparison.year1.birds_born}
+            />
+          </div>
+        ) : (
+          <div className="text-center text-slate-500 py-8">
+            No data available for comparison
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
@@ -393,6 +545,9 @@ export const Reports = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Year-over-Year Comparison */}
+      <YearComparison t={t} />
 
       {/* Export Options */}
       <Card className="bg-[#202940] border-white/5">

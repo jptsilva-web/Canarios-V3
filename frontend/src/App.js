@@ -13,6 +13,8 @@ import { Contacts } from "./pages/Contacts";
 import { Settings } from "./pages/Settings";
 import { Reports } from "./pages/Reports";
 import { Genealogy } from "./pages/Genealogy";
+import { Seasons } from "./pages/Seasons";
+import { PrintCards } from "./pages/PrintCards";
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/newborn" element={<Newborn />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/seasons" element={<Seasons />} />
+            <Route path="/print-cards" element={<PrintCards />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
