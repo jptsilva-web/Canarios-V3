@@ -350,7 +350,7 @@ export const translations = {
     },
     // App
     app: {
-      title: 'Canary Control',
+      title: 'OrniTuga',
       subtitle: 'Gestão de Criação',
     },
     // Seasons
@@ -744,7 +744,7 @@ export const translations = {
     },
     // App
     app: {
-      title: 'Canary Control',
+      title: 'OrniTuga',
       subtitle: 'Breeding Management',
     },
     // Seasons
@@ -1138,7 +1138,7 @@ export const translations = {
     },
     // App
     app: {
-      title: 'Canary Control',
+      title: 'OrniTuga',
       subtitle: 'Gestión de Cría',
     },
     // Seasons
