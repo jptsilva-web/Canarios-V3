@@ -14,28 +14,40 @@ import {
   X,
   ChevronRight,
   BarChart3,
-  GitBranch
+  GitBranch,
+  Globe
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Toaster } from './ui/sonner';
+import { useLanguage, languages } from '../lib/LanguageContext';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from './ui/popover';
 
-const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/zones', icon: Grid3X3, label: 'Zones & Cages' },
-  { path: '/birds', icon: Bird, label: 'Birds' },
-  { path: '/genealogy', icon: GitBranch, label: 'Family Tree' },
-  { path: '/pairs', icon: Heart, label: 'Pairs' },
-  { path: '/tasks', icon: ListTodo, label: 'Tasks' },
-  { path: '/calendar', icon: Calendar, label: 'Calendar' },
-  { path: '/newborn', icon: Baby, label: 'Newborn' },
-  { path: '/reports', icon: BarChart3, label: 'Reports' },
-  { path: '/contacts', icon: Users, label: 'Contacts' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
+const getNavItems = (t) => [
+  { path: '/', icon: LayoutDashboard, label: t('nav.dashboard'), key: 'dashboard' },
+  { path: '/zones', icon: Grid3X3, label: t('nav.zones'), key: 'zones' },
+  { path: '/birds', icon: Bird, label: t('nav.birds'), key: 'birds' },
+  { path: '/genealogy', icon: GitBranch, label: t('nav.familyTree'), key: 'family-tree' },
+  { path: '/pairs', icon: Heart, label: t('nav.pairs'), key: 'pairs' },
+  { path: '/tasks', icon: ListTodo, label: t('nav.tasks'), key: 'tasks' },
+  { path: '/calendar', icon: Calendar, label: t('nav.calendar'), key: 'calendar' },
+  { path: '/newborn', icon: Baby, label: t('nav.newborn'), key: 'newborn' },
+  { path: '/reports', icon: BarChart3, label: t('nav.reports'), key: 'reports' },
+  { path: '/contacts', icon: Users, label: t('nav.contacts'), key: 'contacts' },
+  { path: '/settings', icon: Settings, label: t('nav.settings'), key: 'settings' },
 ];
 
 export const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [langPopoverOpen, setLangPopoverOpen] = useState(false);
   const location = useLocation();
+  const { language, changeLanguage, t } = useLanguage();
+  
+  const navItems = getNavItems(t);
+  const currentLang = languages.find(l => l.code === language);
 
   return (
     <div className="min-h-screen bg-[#1A2035] flex">
@@ -47,6 +59,48 @@ export const Layout = ({ children }) => {
       >
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
+
+      {/* Language Selector - Fixed top right */}
+      <Popover open={langPopoverOpen} onOpenChange={setLangPopoverOpen}>
+        <PopoverTrigger asChild>
+          <button
+            data-testid="language-selector"
+            className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg bg-[#202940] border border-white/10 text-white hover:border-[#FFC300]/50 transition-colors"
+          >
+            <span className="text-xl">{currentLang?.flag}</span>
+            <span className="text-sm hidden sm:inline">{currentLang?.name}</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-48 p-2 bg-[#202940] border-white/10"
+          align="end"
+        >
+          <div className="space-y-1">
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                data-testid={`lang-${lang.code}`}
+                onClick={() => {
+                  changeLanguage(lang.code);
+                  setLangPopoverOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                  language === lang.code
+                    ? "bg-[#FFC300]/15 text-[#FFC300]"
+                    : "text-white hover:bg-white/5"
+                )}
+              >
+                <span className="text-xl">{lang.flag}</span>
+                <span>{lang.name}</span>
+                {language === lang.code && (
+                  <ChevronRight size={14} className="ml-auto" />
+                )}
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {/* Sidebar Overlay */}
       {sidebarOpen && (
@@ -71,9 +125,9 @@ export const Layout = ({ children }) => {
             </div>
             <div>
               <h1 className="text-lg font-bold text-white font-['Barlow_Condensed'] tracking-wide">
-                CANARY CONTROL
+                {t('app.title').toUpperCase()}
               </h1>
-              <p className="text-xs text-slate-400">Breeding Management</p>
+              <p className="text-xs text-slate-400">{t('app.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -86,7 +140,7 @@ export const Layout = ({ children }) => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`nav-${item.key}`}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",

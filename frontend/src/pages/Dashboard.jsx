@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { dashboardApi } from '../lib/api';
 import { formatDate, getDaysUntil, getDaysLabel, getTaskTypeColor } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../lib/LanguageContext';
 
 const StatCard = ({ icon: Icon, label, value, color, trend }) => (
   <Card className="bg-[#202940] border-white/5 hover:border-[#FFC300]/30 transition-colors">
@@ -94,6 +95,7 @@ export const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,10 +128,10 @@ export const Dashboard = () => {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-          Dashboard
+          {t('dashboard.title')}
         </h1>
         <p className="text-slate-400 mt-1">
-          Overview of your breeding operation
+          {t('dashboard.subtitle')}
         </p>
       </div>
 
@@ -137,13 +139,13 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           icon={Bird} 
-          label="Total Birds" 
+          label={t('dashboard.totalBirds')}
           value={stats?.total_birds || 0}
           color="#FFC300"
         />
         <StatCard 
           icon={Heart} 
-          label="Active Pairs" 
+          label={t('dashboard.activePairs')}
           value={stats?.active_pairs || 0}
           color="#E91E63"
         />

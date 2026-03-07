@@ -62,6 +62,7 @@ import { birdsApi } from '../lib/api';
 import { cn, formatDate } from '../lib/utils';
 import { toast } from 'sonner';
 import { CANARY_CLASSES } from '../data/canaryClasses';
+import { useLanguage } from '../lib/LanguageContext';
 
 // Class Selector Component with Search
 const ClassSelector = ({ value, onChange }) => {
@@ -223,6 +224,7 @@ const StamSelector = ({ value, onChange, savedStams }) => {
 };
 
 export const Birds = () => {
+  const { t } = useLanguage();
   const [birds, setBirds] = useState([]);
   const [savedStams, setSavedStams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -386,10 +388,10 @@ export const Birds = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-            Bird Registry
+            {t('birds.title')}
           </h1>
           <p className="text-slate-400 mt-1">
-            {birds.length} birds ({maleCount} males, {femaleCount} females)
+            {birds.length} {t('nav.birds').toLowerCase()} ({maleCount} {t('birds.males')}, {femaleCount} {t('birds.females')})
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -404,19 +406,19 @@ export const Birds = () => {
               className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90 font-bold"
               data-testid="add-bird-btn"
             >
-              <Plus size={20} className="mr-2" /> Add Bird
+              <Plus size={20} className="mr-2" /> {t('birds.addBird')}
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-[#202940] border-white/10 text-white max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-xl font-['Barlow_Condensed']">
-                {editingBird ? 'Edit Bird' : 'Add New Bird'}
+                {editingBird ? t('birds.editBird') : t('birds.addBird')}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">Band Number *</Label>
+                  <Label className="text-slate-300">{t('birds.bandNumber')} *</Label>
                   <Input
                     value={formData.band_number}
                     onChange={(e) => setFormData({ ...formData, band_number: e.target.value })}
@@ -427,7 +429,7 @@ export const Birds = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Band Year</Label>
+                  <Label className="text-slate-300">{t('birds.bandYear')}</Label>
                   <Input
                     type="number"
                     value={formData.band_year}
@@ -439,7 +441,7 @@ export const Birds = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">Gender *</Label>
+                  <Label className="text-slate-300">{t('birds.gender')} *</Label>
                   <Select
                     value={formData.gender}
                     onValueChange={(value) => setFormData({ ...formData, gender: value })}

@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { reportsApi, exportApi } from '../lib/api';
 import { toast } from 'sonner';
+import { useLanguage } from '../lib/LanguageContext';
 
 const StatCard = ({ icon: Icon, label, value, subValue, color, trend }) => (
   <Card className="bg-[#202940] border-white/5">
@@ -79,6 +80,7 @@ const RateCard = ({ label, rate, description, color }) => (
 );
 
 export const Reports = () => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -106,7 +108,7 @@ export const Reports = () => {
       url = format === 'csv' ? exportApi.breedingReportCSV() : exportApi.breedingReportPDF();
     }
     window.open(url, '_blank');
-    toast.success(`Exporting ${type} as ${format.toUpperCase()}...`);
+    toast.success(`${t('common.export')} ${type} ${format.toUpperCase()}...`);
   };
 
   if (loading) {
@@ -123,10 +125,10 @@ export const Reports = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-            Breeding Reports
+            {t('reports.title')}
           </h1>
           <p className="text-slate-400 mt-1">
-            Statistics and analytics for your breeding operation
+            {t('reports.subtitle')}
           </p>
         </div>
       </div>

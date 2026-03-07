@@ -32,6 +32,7 @@ Build a canary breeding control/management web application with a local database
 - ✅ Breeding pairs management with clutch tracking
 - ✅ Egg tracking with visual indicators
 - ✅ **Interactive Egg Status** - Click eggs to mark as fertile (green), infertile (red), or hatched (bird icon)
+- ✅ **Ring numbers displayed below bird icons** in Pairs page
 - ✅ Status transitions (laying → incubating → hatching)
 - ✅ Tasks page grouped by urgency (overdue, today, upcoming)
 - ✅ Calendar view with breeding events and manual task creation
@@ -44,6 +45,10 @@ Build a canary breeding control/management web application with a local database
   - **Quick stats** - Shows total birds count with male/female breakdown
 - ✅ **Breeding Reports** - Statistics with fertility rate, hatch rate, egg breakdown, clutch summary
 - ✅ **Data Export** - Export birds and breeding reports to CSV/PDF
+- ✅ **Multi-language Support** - 3 languages with flag selector:
+  - 🇵🇹 Português (Portugal)
+  - 🇬🇧 English
+  - 🇪🇸 Español
 - ✅ Dark navy theme with custom accent colors
 - ✅ Mobile-responsive sidebar navigation
 
@@ -79,6 +84,7 @@ Build a canary breeding control/management web application with a local database
 - [Done] Breeding statistics and reports
 - [Done] Data export (CSV/PDF)
 - [Done] Search functionality in genealogy page
+- [Done] Multi-language support (PT/EN/ES)
 
 ### P1 (High Priority)
 - Bird photo attachments
