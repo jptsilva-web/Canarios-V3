@@ -192,6 +192,8 @@ export const translations = {
       startIncubation: 'Iniciar Incubação',
       markHatching: 'Marcar Eclosão',
       completeClutch: 'Concluir Postura',
+      started: 'Iniciado',
+      notAssigned: 'Não atribuído',
       eggStatus: {
         fresh: 'Fresco',
         fertile: 'Fértil',
@@ -584,6 +586,8 @@ export const translations = {
       startIncubation: 'Start Incubation',
       markHatching: 'Mark Hatching',
       completeClutch: 'Complete Clutch',
+      started: 'Started',
+      notAssigned: 'Not assigned',
       eggStatus: {
         fresh: 'Fresh',
         fertile: 'Fertile',
@@ -976,6 +980,8 @@ export const translations = {
       startIncubation: 'Iniciar Incubación',
       markHatching: 'Marcar Eclosión',
       completeClutch: 'Completar Puesta',
+      started: 'Iniciado',
+      notAssigned: 'No asignado',
       eggStatus: {
         fresh: 'Fresco',
         fertile: 'Fértil',

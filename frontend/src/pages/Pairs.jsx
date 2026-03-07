@@ -51,7 +51,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
 
 // Egg Status Component with click to change status
-const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
+const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
   const [open, setOpen] = useState(false);
   const [bandNumber, setBandNumber] = useState(egg.band_number || '');
   const [updating, setUpdating] = useState(false);
@@ -207,7 +207,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
       {canChangeStatus && (
         <PopoverContent className="w-56 bg-[#202940] border-white/10 p-2">
           <div className="space-y-1">
-            <p className="text-xs text-slate-400 px-2 py-1">Egg {index + 1} Status</p>
+            <p className="text-xs text-slate-400 px-2 py-1">{t('pairs.eggs')} {index + 1}</p>
             
             <button
               onClick={() => handleStatusChange('fertile')}
@@ -215,8 +215,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
               className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#00BFA6]/20 transition-colors"
             >
               <div className="w-4 h-5 bg-[#00BFA6] rounded-full" style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }} />
-              <span className="text-sm text-white">Fertile</span>
-              <span className="text-xs text-[#00BFA6] ml-auto">Green</span>
+              <span className="text-sm text-white">{t('pairs.eggStatus.fertile')}</span>
             </button>
             
             <button
@@ -225,15 +224,14 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
               className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#E91E63]/20 transition-colors"
             >
               <div className="w-4 h-5 bg-[#E91E63] rounded-full" style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }} />
-              <span className="text-sm text-white">Infertile</span>
-              <span className="text-xs text-[#E91E63] ml-auto">Red</span>
+              <span className="text-sm text-white">{t('pairs.eggStatus.infertile')}</span>
             </button>
             
             {clutchStatus === 'hatching' && egg.status === 'fertile' && (
               <>
                 <hr className="border-white/10 my-1" />
                 <div className="px-2 py-1">
-                  <Label className="text-slate-300 text-xs">Ring Number (optional)</Label>
+                  <Label className="text-slate-300 text-xs">{t('pairs.ringNumber')}</Label>
                   <Input
                     value={bandNumber}
                     onChange={(e) => setBandNumber(e.target.value)}
@@ -247,7 +245,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
                   className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#00BFA6]/20 transition-colors"
                 >
                   <Bird size={16} className="text-[#00BFA6]" />
-                  <span className="text-sm text-white">Hatched (Born Alive)</span>
+                  <span className="text-sm text-white">{t('pairs.eggStatus.hatched')}</span>
                 </button>
               </>
             )}
@@ -260,7 +258,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
               className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-slate-700/50 transition-colors"
             >
               <X size={16} className="text-slate-400" />
-              <span className="text-sm text-slate-400">Dead/Remove</span>
+              <span className="text-sm text-slate-400">{t('pairs.eggStatus.dead')}</span>
             </button>
           </div>
         </PopoverContent>
@@ -269,7 +267,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate }) => {
   );
 };
 
-const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
+const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg, t }) => {
   const [updating, setUpdating] = useState(false);
 
   const handleStartIncubation = async () => {
@@ -324,15 +322,25 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
     dead: clutch.eggs?.filter(e => e.status === 'dead').length || 0,
   };
 
+  const getClutchStatusText = (status) => {
+    const statusMap = {
+      'laying': t('pairs.clutchStatus.laying'),
+      'incubating': t('pairs.clutchStatus.incubating'),
+      'hatching': t('pairs.clutchStatus.hatching'),
+      'completed': t('pairs.clutchStatus.completed'),
+    };
+    return statusMap[status] || status;
+  };
+
   return (
     <div className="p-4 rounded-lg bg-[#1A2035] border border-white/5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={cn('status-badge text-xs', getStatusColor(clutch.status))}>
-            {clutch.status}
+            {getClutchStatusText(clutch.status)}
           </span>
           <span className="text-xs text-slate-500">
-            Started {formatDate(clutch.start_date)}
+            {t('pairs.started')} {formatDate(clutch.start_date)}
           </span>
         </div>
         <button 
@@ -347,10 +355,10 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
       {/* Egg Status Legend */}
       {(clutch.status === 'incubating' || clutch.status === 'hatching') && clutch.eggs?.length > 0 && (
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="text-slate-400">Click eggs to change status:</span>
-          <span className="text-[#00BFA6]">● Fertile</span>
-          <span className="text-[#E91E63]">● Infertile</span>
-          {clutch.status === 'hatching' && <span className="text-[#00BFA6]">🐤 Hatched</span>}
+          <span className="text-slate-400">{t('pairs.clickToChange')}:</span>
+          <span className="text-[#00BFA6]">● {t('pairs.eggStatus.fertile')}</span>
+          <span className="text-[#E91E63]">● {t('pairs.eggStatus.infertile')}</span>
+          {clutch.status === 'hatching' && <span className="text-[#00BFA6]">🐤 {t('pairs.eggStatus.hatched')}</span>}
         </div>
       )}
 
@@ -364,6 +372,7 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
             clutchId={clutch.id}
             clutchStatus={clutch.status}
             onUpdate={onUpdate}
+            t={t}
           />
         ))}
         {clutch.status === 'laying' && (
@@ -382,16 +391,16 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
       {clutch.eggs?.length > 0 && (clutch.status === 'incubating' || clutch.status === 'hatching' || clutch.status === 'completed') && (
         <div className="flex gap-3 text-xs">
           {eggCounts.fertile > 0 && (
-            <span className="text-[#00BFA6]">{eggCounts.fertile} fertile</span>
+            <span className="text-[#00BFA6]">{eggCounts.fertile} {t('pairs.eggStatus.fertile').toLowerCase()}</span>
           )}
           {eggCounts.infertile > 0 && (
-            <span className="text-[#E91E63]">{eggCounts.infertile} infertile</span>
+            <span className="text-[#E91E63]">{eggCounts.infertile} {t('pairs.eggStatus.infertile').toLowerCase()}</span>
           )}
           {eggCounts.hatched > 0 && (
-            <span className="text-[#00BFA6]">{eggCounts.hatched} hatched</span>
+            <span className="text-[#00BFA6]">{eggCounts.hatched} {t('pairs.eggStatus.hatched').toLowerCase()}</span>
           )}
           {eggCounts.dead > 0 && (
-            <span className="text-slate-500">{eggCounts.dead} dead</span>
+            <span className="text-slate-500">{eggCounts.dead} {t('pairs.eggStatus.dead').toLowerCase()}</span>
           )}
         </div>
       )}
@@ -400,12 +409,12 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
       {clutch.expected_hatch_date && (
         <div className="text-xs text-slate-400 space-y-1">
           <div className="flex justify-between">
-            <span>Expected Hatch:</span>
+            <span>{t('pairs.expectedHatch')}:</span>
             <span className="text-[#00BFA6]">{formatDate(clutch.expected_hatch_date)}</span>
           </div>
           {clutch.expected_band_date && (
             <div className="flex justify-between">
-              <span>Expected Band:</span>
+              <span>{t('pairs.expectedBand')}:</span>
               <span className="text-[#E91E63]">{formatDate(clutch.expected_band_date)}</span>
             </div>
           )}
@@ -422,7 +431,7 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
             className="flex-1 bg-[#FF9800] hover:bg-[#FF9800]/90 text-white"
             data-testid={`start-incubation-${clutch.id}`}
           >
-            <Play size={14} className="mr-1" /> Start Incubation
+            <Play size={14} className="mr-1" /> {t('pairs.startIncubation')}
           </Button>
         )}
         {clutch.status === 'incubating' && (
@@ -433,7 +442,7 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
             className="flex-1 bg-[#00BFA6] hover:bg-[#00BFA6]/90 text-white"
             data-testid={`mark-hatching-${clutch.id}`}
           >
-            <Egg size={14} className="mr-1" /> Mark Hatching
+            <Egg size={14} className="mr-1" /> {t('pairs.markHatching')}
           </Button>
         )}
         {(clutch.status === 'hatching' || clutch.status === 'weaning') && (
@@ -444,7 +453,7 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
             className="flex-1 bg-slate-600 hover:bg-slate-500 text-white"
             data-testid={`complete-clutch-${clutch.id}`}
           >
-            <CheckCircle2 size={14} className="mr-1" /> Complete
+            <CheckCircle2 size={14} className="mr-1" /> {t('pairs.completeClutch')}
           </Button>
         )}
       </div>
@@ -452,7 +461,7 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg }) => {
   );
 };
 
-const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
+const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
   const [clutches, setClutches] = useState([]);
   const [showClutches, setShowClutches] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -545,25 +554,25 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
         {/* Birds */}
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 rounded-lg bg-[#1A2035] border border-white/5">
-            <p className="text-xs text-[#00BFA6] uppercase tracking-wider font-['Barlow_Condensed'] mb-1">Male</p>
+            <p className="text-xs text-[#00BFA6] uppercase tracking-wider font-['Barlow_Condensed'] mb-1">{t('common.male')}</p>
             {male ? (
               <>
                 <p className="text-white font-mono text-sm">{male.band_number}</p>
-                <p className="text-xs text-slate-400">{male.stam || male.color || 'No STAM'}</p>
+                <p className="text-xs text-slate-400">{male.stam || male.color || t('birds.noBirds')}</p>
               </>
             ) : (
-              <p className="text-slate-500 text-sm">Not assigned</p>
+              <p className="text-slate-500 text-sm">{t('pairs.notAssigned')}</p>
             )}
           </div>
           <div className="p-3 rounded-lg bg-[#1A2035] border border-white/5">
-            <p className="text-xs text-[#FF69B4] uppercase tracking-wider font-['Barlow_Condensed'] mb-1">Female</p>
+            <p className="text-xs text-[#FF69B4] uppercase tracking-wider font-['Barlow_Condensed'] mb-1">{t('common.female')}</p>
             {female ? (
               <>
                 <p className="text-white font-mono text-sm">{female.band_number}</p>
-                <p className="text-xs text-slate-400">{female.stam || female.color || 'No STAM'}</p>
+                <p className="text-xs text-slate-400">{female.stam || female.color || t('birds.noBirds')}</p>
               </>
             ) : (
-              <p className="text-slate-500 text-sm">Not assigned</p>
+              <p className="text-slate-500 text-sm">{t('pairs.notAssigned')}</p>
             )}
           </div>
         </div>
@@ -575,7 +584,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
               {activeClutch.status}
             </span>
             <span className="text-slate-400">
-              {activeClutch.eggs?.length || 0} eggs
+              {activeClutch.eggs?.length || 0} {t('pairs.eggs').toLowerCase()}
             </span>
           </div>
         )}
@@ -587,7 +596,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
           data-testid={`toggle-clutches-${pair.id}`}
         >
           <span className="text-sm text-slate-300">
-            Clutches ({clutches.length})
+            {t('pairs.clutches')} ({clutches.length})
           </span>
           <ChevronRight 
             size={16} 
@@ -614,6 +623,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
                     onUpdate={fetchClutches}
                     onDelete={handleDeleteClutch}
                     onAddEgg={handleAddEgg}
+                    t={t}
                   />
                 ))}
                 <Button
@@ -622,7 +632,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh }) => {
                   className="w-full border-dashed border-[#FFC300]/50 text-[#FFC300] hover:bg-[#FFC300]/10"
                   data-testid={`add-clutch-${pair.id}`}
                 >
-                  <Plus size={16} className="mr-2" /> Add New Clutch
+                  <Plus size={16} className="mr-2" /> {t('pairs.addClutch')}
                 </Button>
               </>
             )}
@@ -812,13 +822,13 @@ export const Pairs = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300">Female</Label>
+                  <Label className="text-slate-300">{t('common.female')}</Label>
                   <Select
                     value={formData.female_id}
                     onValueChange={(value) => setFormData({ ...formData, female_id: value })}
                   >
                     <SelectTrigger className="bg-[#1A2035] border-white/10 text-white" data-testid="female-select">
-                      <SelectValue placeholder="Select female" />
+                      <SelectValue placeholder={t('common.female')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#202940] border-white/10">
                       {females.map((bird) => (
@@ -837,14 +847,14 @@ export const Pairs = () => {
                   onClick={() => setDialogOpen(false)}
                   className="flex-1 border-white/10 text-white hover:bg-white/5"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1 bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
                   data-testid="save-pair-btn"
                 >
-                  {editingPair ? 'Update' : 'Create'} Pair
+                  {editingPair ? t('common.update') : t('common.create')}
                 </Button>
               </div>
             </form>
@@ -857,15 +867,15 @@ export const Pairs = () => {
         <Card className="bg-[#202940] border-white/5">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Heart className="w-16 h-16 text-slate-500 mb-4" />
-            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">No Pairs Yet</h3>
+            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">{t('pairs.noPairs')}</h3>
             <p className="text-slate-400 text-center max-w-md mb-6">
-              Start by adding your breeding pairs. You can then track eggs, incubation, and hatching for each pair.
+              {t('pairs.noPairs')}
             </p>
             <Button 
               onClick={() => setDialogOpen(true)}
               className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
             >
-              <Plus size={20} className="mr-2" /> Add Your First Pair
+              <Plus size={20} className="mr-2" /> {t('pairs.addPair')}
             </Button>
           </CardContent>
         </Card>
@@ -880,6 +890,7 @@ export const Pairs = () => {
               onEdit={handleEdit}
               onDelete={setDeleteDialog}
               onRefresh={fetchData}
+              t={t}
             />
           ))}
         </div>
@@ -889,21 +900,21 @@ export const Pairs = () => {
       <AlertDialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
         <AlertDialogContent className="bg-[#202940] border-white/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Pair?</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">{t('pairs.deletePair')}?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-400">
-              This will permanently delete this pair and all its clutch records. This action cannot be undone.
+              {t('pairs.deletePair')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-white/10 text-white hover:bg-white/5">
-              Cancel
+              {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete}
               className="bg-[#E91E63] text-white hover:bg-[#E91E63]/90"
               data-testid="confirm-delete-pair"
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
