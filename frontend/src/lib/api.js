@@ -29,6 +29,7 @@ export const cagesApi = {
 export const birdsApi = {
   getAll: (gender) => api.get('/birds', { params: { gender } }),
   getById: (id) => api.get(`/birds/${id}`),
+  getUniqueStams: () => api.get('/birds/stams'),
   create: (data) => api.post('/birds', data),
   update: (id, data) => api.put(`/birds/${id}`, data),
   delete: (id) => api.delete(`/birds/${id}`),

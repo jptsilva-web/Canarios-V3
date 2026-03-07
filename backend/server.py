@@ -285,10 +285,33 @@ async def get_cage(cage_id: str):
 # ============ BIRDS API ============
 @api_router.post("/birds", response_model=Bird)
 async def create_bird(input: BirdCreate):
+    # Validate STAM uniqueness per year
+    if input.stam:
+        existing = await db.birds.find_one({
+            "stam": input.stam,
+            "band_year": input.band_year
+        }, {"_id": 0})
+        if existing:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"STAM '{input.stam}' already exists for year {input.band_year}"
+            )
+    
     bird = Bird(**input.model_dump())
     doc = bird.model_dump()
     await db.birds.insert_one(doc)
     return bird
+
+@api_router.get("/birds/stams", response_model=List[str])
+async def get_unique_stams():
+    """Get all unique STAM values for auto-suggest"""
+    pipeline = [
+        {"$match": {"stam": {"$ne": None, "$ne": ""}}},
+        {"$group": {"_id": "$stam"}},
+        {"$sort": {"_id": 1}}
+    ]
+    results = await db.birds.aggregate(pipeline).to_list(1000)
+    return [r["_id"] for r in results]
 
 @api_router.get("/birds", response_model=List[Bird])
 async def get_birds(gender: Optional[BirdGender] = None):
@@ -310,6 +333,19 @@ async def update_bird(bird_id: str, input: BirdCreate):
     bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
     if not bird:
         raise HTTPException(status_code=404, detail="Bird not found")
+    
+    # Validate STAM uniqueness per year (excluding current bird)
+    if input.stam:
+        existing = await db.birds.find_one({
+            "stam": input.stam,
+            "band_year": input.band_year,
+            "id": {"$ne": bird_id}
+        }, {"_id": 0})
+        if existing:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"STAM '{input.stam}' already exists for year {input.band_year}"
+            )
     
     update_data = input.model_dump()
     await db.birds.update_one({"id": bird_id}, {"$set": update_data})

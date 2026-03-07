@@ -144,8 +144,87 @@ const ClassSelector = ({ value, onChange }) => {
   );
 };
 
+// STAM Selector with autocomplete from saved STAMs
+const StamSelector = ({ value, onChange, savedStams }) => {
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(value || '');
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  const filteredStams = useMemo(() => {
+    if (!inputValue) return savedStams;
+    const search = inputValue.toLowerCase();
+    return savedStams.filter(s => s.toLowerCase().includes(search));
+  }, [inputValue, savedStams]);
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    onChange(newValue);
+  };
+
+  const handleSelect = (stam) => {
+    setInputValue(stam);
+    onChange(stam);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div className="relative">
+          <Input
+            value={inputValue}
+            onChange={handleInputChange}
+            onFocus={() => setOpen(true)}
+            placeholder="e.g., PT-2025-001"
+            className="bg-[#1A2035] border-white/10 text-white font-mono"
+            required
+            data-testid="stam-input"
+          />
+        </div>
+      </PopoverTrigger>
+      {savedStams.length > 0 && (
+        <PopoverContent className="w-[300px] p-0 bg-[#202940] border-white/10" align="start">
+          <Command className="bg-transparent">
+            <CommandList className="max-h-[200px]">
+              {filteredStams.length === 0 ? (
+                <div className="py-3 px-4 text-sm text-slate-400">
+                  New STAM - will be saved for future use
+                </div>
+              ) : (
+                <CommandGroup heading="Saved STAMs">
+                  {filteredStams.slice(0, 10).map((stam) => (
+                    <CommandItem
+                      key={stam}
+                      value={stam}
+                      onSelect={() => handleSelect(stam)}
+                      className="text-white hover:bg-[#1A2035] cursor-pointer font-mono"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === stam ? "opacity-100 text-[#FFC300]" : "opacity-0"
+                        )}
+                      />
+                      {stam}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+};
+
 export const Birds = () => {
   const [birds, setBirds] = useState([]);
+  const [savedStams, setSavedStams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
@@ -153,10 +232,12 @@ export const Birds = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
 
+  // Default year is previous year
+  const defaultYear = new Date().getFullYear() - 1;
+
   const [formData, setFormData] = useState({
     band_number: '',
-    band_year: new Date().getFullYear(),
-    breeder_number: '',
+    band_year: defaultYear,
     gender: 'male',
     species: 'Canary',
     stam: '',
@@ -177,8 +258,18 @@ export const Birds = () => {
     }
   };
 
+  const fetchSavedStams = async () => {
+    try {
+      const res = await birdsApi.getUniqueStams();
+      setSavedStams(res.data);
+    } catch (error) {
+      console.error('Error fetching STAMs:', error);
+    }
+  };
+
   useEffect(() => {
     fetchBirds();
+    fetchSavedStams();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -206,16 +297,21 @@ export const Birds = () => {
       setEditingBird(null);
       resetForm();
       fetchBirds();
+      fetchSavedStams(); // Refresh STAMs list
     } catch (error) {
-      toast.error('Failed to save bird');
+      // Check for STAM duplicate error
+      if (error.response?.data?.detail?.includes('STAM')) {
+        toast.error(error.response.data.detail);
+      } else {
+        toast.error('Failed to save bird');
+      }
     }
   };
 
   const resetForm = () => {
     setFormData({
       band_number: '',
-      band_year: new Date().getFullYear(),
-      breeder_number: '',
+      band_year: defaultYear,
       gender: 'male',
       species: 'Canary',
       stam: '',
@@ -229,8 +325,7 @@ export const Birds = () => {
     setEditingBird(bird);
     setFormData({
       band_number: bird.band_number || '',
-      band_year: bird.band_year || new Date().getFullYear(),
-      breeder_number: bird.breeder_number || '',
+      band_year: bird.band_year || defaultYear,
       gender: bird.gender || 'male',
       species: bird.species || 'Canary',
       stam: bird.stam || bird.color || '',
@@ -248,6 +343,7 @@ export const Birds = () => {
       toast.success('Bird deleted');
       setDeleteDialog(null);
       fetchBirds();
+      fetchSavedStams();
     } catch (error) {
       toast.error('Failed to delete bird');
     }
@@ -262,7 +358,6 @@ export const Birds = () => {
     const matchesSearch = 
       bird.band_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       bird.stam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bird.breeder_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       getClassName(bird.class_id).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGender = genderFilter === 'all' || bird.gender === genderFilter;
     return matchesSearch && matchesGender;
@@ -353,14 +448,14 @@ export const Birds = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300">STAM *</Label>
-                  <Input
+                  <Label className="text-slate-300">
+                    STAM * 
+                    <span className="text-xs text-slate-500 ml-1">(unique per year)</span>
+                  </Label>
+                  <StamSelector
                     value={formData.stam}
-                    onChange={(e) => setFormData({ ...formData, stam: e.target.value })}
-                    placeholder="e.g., PT-2026-001"
-                    className="bg-[#1A2035] border-white/10 text-white font-mono"
-                    required
-                    data-testid="stam-input"
+                    onChange={(value) => setFormData({ ...formData, stam: value })}
+                    savedStams={savedStams}
                   />
                 </div>
               </div>
@@ -369,16 +464,6 @@ export const Birds = () => {
                 <ClassSelector
                   value={formData.class_id}
                   onChange={(value) => setFormData({ ...formData, class_id: value })}
-                />
-              </div>
-              <div>
-                <Label className="text-slate-300">Breeder Number</Label>
-                <Input
-                  value={formData.breeder_number}
-                  onChange={(e) => setFormData({ ...formData, breeder_number: e.target.value })}
-                  placeholder="Your breeder ID"
-                  className="bg-[#1A2035] border-white/10 text-white"
-                  data-testid="breeder-number-input"
                 />
               </div>
               <div>
@@ -432,7 +517,7 @@ export const Birds = () => {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by band number, STAM, class, or breeder..."
+                placeholder="Search by band number, STAM, or class..."
                 className="pl-10 bg-[#1A2035] border-white/10 text-white"
                 data-testid="search-input"
               />
