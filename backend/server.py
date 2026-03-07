@@ -815,6 +815,384 @@ async def get_tasks():
     tasks.sort(key=lambda x: x.due_date)
     return tasks
 
+# ============ BREEDING STATISTICS API ============
+class BreedingStats(BaseModel):
+    total_eggs: int = 0
+    fertile_eggs: int = 0
+    infertile_eggs: int = 0
+    hatched_eggs: int = 0
+    dead_eggs: int = 0
+    fertility_rate: float = 0.0
+    hatch_rate: float = 0.0
+    survival_rate: float = 0.0
+    total_clutches: int = 0
+    completed_clutches: int = 0
+    active_clutches: int = 0
+    avg_eggs_per_clutch: float = 0.0
+    avg_hatched_per_clutch: float = 0.0
+
+@api_router.get("/reports/breeding-stats", response_model=BreedingStats)
+async def get_breeding_stats():
+    """Get comprehensive breeding statistics"""
+    clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+    
+    total_eggs = 0
+    fertile_eggs = 0
+    infertile_eggs = 0
+    hatched_eggs = 0
+    dead_eggs = 0
+    completed_clutches = 0
+    active_clutches = 0
+    total_hatched_per_clutch = []
+    
+    for clutch in clutches:
+        eggs = clutch.get("eggs", [])
+        total_eggs += len(eggs)
+        clutch_hatched = 0
+        
+        for egg in eggs:
+            status = egg.get("status", "fresh")
+            if status == "fertile":
+                fertile_eggs += 1
+            elif status == "infertile":
+                infertile_eggs += 1
+            elif status == "hatched":
+                hatched_eggs += 1
+                clutch_hatched += 1
+            elif status == "dead":
+                dead_eggs += 1
+        
+        if clutch.get("status") == "completed":
+            completed_clutches += 1
+            total_hatched_per_clutch.append(clutch_hatched)
+        else:
+            active_clutches += 1
+    
+    # Calculate rates (prevent division by zero)
+    fertility_rate = (fertile_eggs + hatched_eggs) / total_eggs * 100 if total_eggs > 0 else 0
+    hatch_rate = hatched_eggs / (fertile_eggs + hatched_eggs) * 100 if (fertile_eggs + hatched_eggs) > 0 else 0
+    survival_rate = hatched_eggs / total_eggs * 100 if total_eggs > 0 else 0
+    avg_eggs_per_clutch = total_eggs / len(clutches) if clutches else 0
+    avg_hatched_per_clutch = sum(total_hatched_per_clutch) / len(total_hatched_per_clutch) if total_hatched_per_clutch else 0
+    
+    return BreedingStats(
+        total_eggs=total_eggs,
+        fertile_eggs=fertile_eggs,
+        infertile_eggs=infertile_eggs,
+        hatched_eggs=hatched_eggs,
+        dead_eggs=dead_eggs,
+        fertility_rate=round(fertility_rate, 1),
+        hatch_rate=round(hatch_rate, 1),
+        survival_rate=round(survival_rate, 1),
+        total_clutches=len(clutches),
+        completed_clutches=completed_clutches,
+        active_clutches=active_clutches,
+        avg_eggs_per_clutch=round(avg_eggs_per_clutch, 1),
+        avg_hatched_per_clutch=round(avg_hatched_per_clutch, 1)
+    )
+
+# ============ GENEALOGY API ============
+class BirdWithParents(BaseModel):
+    id: str
+    band_number: str
+    band_year: int
+    gender: str
+    stam: Optional[str] = None
+    class_id: Optional[str] = None
+    parent_male: Optional[dict] = None
+    parent_female: Optional[dict] = None
+    children: List[dict] = []
+
+@api_router.get("/birds/{bird_id}/genealogy")
+async def get_bird_genealogy(bird_id: str):
+    """Get genealogy tree for a bird (parents and children)"""
+    bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
+    if not bird:
+        raise HTTPException(status_code=404, detail="Bird not found")
+    
+    result = {
+        "bird": bird,
+        "parents": {
+            "male": None,
+            "female": None
+        },
+        "grandparents": {
+            "paternal": {"male": None, "female": None},
+            "maternal": {"male": None, "female": None}
+        },
+        "children": [],
+        "siblings": []
+    }
+    
+    # Get parents
+    if bird.get("parent_male_id"):
+        parent_male = await db.birds.find_one({"id": bird["parent_male_id"]}, {"_id": 0})
+        result["parents"]["male"] = parent_male
+        # Get paternal grandparents
+        if parent_male:
+            if parent_male.get("parent_male_id"):
+                gp = await db.birds.find_one({"id": parent_male["parent_male_id"]}, {"_id": 0})
+                result["grandparents"]["paternal"]["male"] = gp
+            if parent_male.get("parent_female_id"):
+                gp = await db.birds.find_one({"id": parent_male["parent_female_id"]}, {"_id": 0})
+                result["grandparents"]["paternal"]["female"] = gp
+    
+    if bird.get("parent_female_id"):
+        parent_female = await db.birds.find_one({"id": bird["parent_female_id"]}, {"_id": 0})
+        result["parents"]["female"] = parent_female
+        # Get maternal grandparents
+        if parent_female:
+            if parent_female.get("parent_male_id"):
+                gp = await db.birds.find_one({"id": parent_female["parent_male_id"]}, {"_id": 0})
+                result["grandparents"]["maternal"]["male"] = gp
+            if parent_female.get("parent_female_id"):
+                gp = await db.birds.find_one({"id": parent_female["parent_female_id"]}, {"_id": 0})
+                result["grandparents"]["maternal"]["female"] = gp
+    
+    # Get children
+    children = await db.birds.find({
+        "$or": [
+            {"parent_male_id": bird_id},
+            {"parent_female_id": bird_id}
+        ]
+    }, {"_id": 0}).to_list(1000)
+    result["children"] = children
+    
+    # Get siblings (same parents)
+    if bird.get("parent_male_id") or bird.get("parent_female_id"):
+        siblings_query = {"id": {"$ne": bird_id}}
+        if bird.get("parent_male_id"):
+            siblings_query["parent_male_id"] = bird["parent_male_id"]
+        if bird.get("parent_female_id"):
+            siblings_query["parent_female_id"] = bird["parent_female_id"]
+        siblings = await db.birds.find(siblings_query, {"_id": 0}).to_list(1000)
+        result["siblings"] = siblings
+    
+    return result
+
+# ============ EXPORT API ============
+from fastapi.responses import StreamingResponse
+from io import BytesIO, StringIO
+import csv
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+
+@api_router.get("/export/birds/csv")
+async def export_birds_csv():
+    """Export birds list to CSV"""
+    birds = await db.birds.find({}, {"_id": 0}).to_list(10000)
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow(['Band Number', 'Year', 'Gender', 'STAM', 'Class ID', 'Species', 'Notes', 'Birth Date', 'Created'])
+    
+    # Data
+    for bird in birds:
+        writer.writerow([
+            bird.get('band_number', ''),
+            bird.get('band_year', ''),
+            bird.get('gender', ''),
+            bird.get('stam', ''),
+            bird.get('class_id', ''),
+            bird.get('species', ''),
+            bird.get('notes', ''),
+            bird.get('birth_date', ''),
+            bird.get('created_at', '')[:10] if bird.get('created_at') else ''
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=birds_export.csv"}
+    )
+
+@api_router.get("/export/birds/pdf")
+async def export_birds_pdf():
+    """Export birds list to PDF"""
+    birds = await db.birds.find({}, {"_id": 0}).to_list(10000)
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=1*cm, leftMargin=1*cm, topMargin=1*cm, bottomMargin=1*cm)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#1A2035'))
+    elements.append(Paragraph('Canary Control - Bird Registry', title_style))
+    elements.append(Spacer(1, 0.5*cm))
+    
+    # Table data
+    data = [['Band', 'Year', 'Gender', 'STAM', 'Class', 'Species']]
+    for bird in birds:
+        data.append([
+            bird.get('band_number', '')[:15],
+            str(bird.get('band_year', '')),
+            bird.get('gender', '').capitalize(),
+            bird.get('stam', '')[:15] if bird.get('stam') else '-',
+            bird.get('class_id', '') or '-',
+            bird.get('species', '')[:15]
+        ])
+    
+    # Create table
+    table = Table(data, colWidths=[3*cm, 2*cm, 2*cm, 4*cm, 2*cm, 3*cm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1A2035')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F5F5F5')),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#333333')),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F8F8')]),
+    ]))
+    elements.append(table)
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=birds_export.pdf"}
+    )
+
+@api_router.get("/export/breeding-report/csv")
+async def export_breeding_report_csv():
+    """Export breeding report to CSV"""
+    pairs = await db.pairs.find({}, {"_id": 0}).to_list(10000)
+    birds = await db.birds.find({}, {"_id": 0}).to_list(10000)
+    clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+    
+    birds_dict = {b["id"]: b for b in birds}
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow(['Pair Name', 'Male Band', 'Female Band', 'Clutch Date', 'Status', 'Total Eggs', 'Fertile', 'Hatched', 'Hatch Rate'])
+    
+    # Data
+    for pair in pairs:
+        male = birds_dict.get(pair.get("male_id"), {})
+        female = birds_dict.get(pair.get("female_id"), {})
+        pair_clutches = [c for c in clutches if c.get("pair_id") == pair["id"]]
+        
+        for clutch in pair_clutches:
+            eggs = clutch.get("eggs", [])
+            total = len(eggs)
+            fertile = sum(1 for e in eggs if e.get("status") in ["fertile", "hatched"])
+            hatched = sum(1 for e in eggs if e.get("status") == "hatched")
+            hatch_rate = f"{(hatched/fertile*100):.0f}%" if fertile > 0 else "N/A"
+            
+            writer.writerow([
+                pair.get('name', f"Pair {pair['id'][:6]}"),
+                male.get('band_number', 'N/A'),
+                female.get('band_number', 'N/A'),
+                clutch.get('start_date', ''),
+                clutch.get('status', ''),
+                total,
+                fertile,
+                hatched,
+                hatch_rate
+            ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=breeding_report.csv"}
+    )
+
+@api_router.get("/export/breeding-report/pdf")
+async def export_breeding_report_pdf():
+    """Export breeding statistics report to PDF"""
+    stats = await get_breeding_stats()
+    pairs = await db.pairs.find({}, {"_id": 0}).to_list(10000)
+    birds = await db.birds.find({}, {"_id": 0}).to_list(10000)
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor('#1A2035'), spaceAfter=20)
+    elements.append(Paragraph('Breeding Statistics Report', title_style))
+    elements.append(Spacer(1, 0.5*cm))
+    
+    # Stats summary
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Heading2'], fontSize=14, textColor=colors.HexColor('#333333'), spaceBefore=15, spaceAfter=10)
+    elements.append(Paragraph('Overview', subtitle_style))
+    
+    stats_data = [
+        ['Metric', 'Value'],
+        ['Total Birds', str(len(birds))],
+        ['Active Pairs', str(len([p for p in pairs if p.get('is_active')]))],
+        ['Total Clutches', str(stats.total_clutches)],
+        ['Total Eggs', str(stats.total_eggs)],
+        ['Hatched Chicks', str(stats.hatched_eggs)],
+    ]
+    
+    stats_table = Table(stats_data, colWidths=[8*cm, 4*cm])
+    stats_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1A2035')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 11),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+    ]))
+    elements.append(stats_table)
+    elements.append(Spacer(1, 1*cm))
+    
+    # Performance metrics
+    elements.append(Paragraph('Performance Metrics', subtitle_style))
+    
+    perf_data = [
+        ['Metric', 'Rate'],
+        ['Fertility Rate', f"{stats.fertility_rate}%"],
+        ['Hatch Rate', f"{stats.hatch_rate}%"],
+        ['Survival Rate', f"{stats.survival_rate}%"],
+        ['Avg Eggs/Clutch', f"{stats.avg_eggs_per_clutch}"],
+        ['Avg Hatched/Clutch', f"{stats.avg_hatched_per_clutch}"],
+    ]
+    
+    perf_table = Table(perf_data, colWidths=[8*cm, 4*cm])
+    perf_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#00BFA6')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 11),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+    ]))
+    elements.append(perf_table)
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=breeding_report.pdf"}
+    )
+
 # Root endpoint
 @api_router.get("/")
 async def root():

@@ -70,4 +70,22 @@ export const dashboardApi = {
   getTasks: () => api.get('/dashboard/tasks'),
 };
 
+// Reports API
+export const reportsApi = {
+  getBreedingStats: () => api.get('/reports/breeding-stats'),
+};
+
+// Genealogy API
+export const genealogyApi = {
+  getBirdGenealogy: (birdId) => api.get(`/birds/${birdId}/genealogy`),
+};
+
+// Export API
+export const exportApi = {
+  birdsCSV: () => `${API_BASE}/export/birds/csv`,
+  birdsPDF: () => `${API_BASE}/export/birds/pdf`,
+  breedingReportCSV: () => `${API_BASE}/export/breeding-report/csv`,
+  breedingReportPDF: () => `${API_BASE}/export/breeding-report/pdf`,
+};
+
 export default api;

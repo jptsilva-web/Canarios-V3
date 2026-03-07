@@ -244,6 +244,8 @@ export const Birds = () => {
     class_id: '',
     notes: '',
     birth_date: '',
+    parent_male_id: '',
+    parent_female_id: '',
   });
 
   const fetchBirds = async () => {
@@ -318,6 +320,8 @@ export const Birds = () => {
       class_id: '',
       notes: '',
       birth_date: '',
+      parent_male_id: '',
+      parent_female_id: '',
     });
   };
 
@@ -332,6 +336,8 @@ export const Birds = () => {
       class_id: bird.class_id || '',
       notes: bird.notes || '',
       birth_date: bird.birth_date || '',
+      parent_male_id: bird.parent_male_id || '',
+      parent_female_id: bird.parent_female_id || '',
     });
     setDialogOpen(true);
   };
@@ -485,6 +491,50 @@ export const Birds = () => {
                   className="bg-[#1A2035] border-white/10 text-white"
                   data-testid="notes-input"
                 />
+              </div>
+              {/* Parent Selection for Genealogy */}
+              <div className="border-t border-white/10 pt-4 mt-2">
+                <p className="text-xs text-slate-500 mb-3 uppercase tracking-wider">Parents (for Family Tree)</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-slate-300 text-xs">Father (Male)</Label>
+                    <Select
+                      value={formData.parent_male_id}
+                      onValueChange={(value) => setFormData({ ...formData, parent_male_id: value })}
+                    >
+                      <SelectTrigger className="bg-[#1A2035] border-white/10 text-white text-sm" data-testid="parent-male-select">
+                        <SelectValue placeholder="Select father..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#202940] border-white/10 max-h-[200px]">
+                        <SelectItem value="none" className="text-slate-400 hover:bg-[#1A2035]">None</SelectItem>
+                        {birds.filter(b => b.gender === 'male' && b.id !== editingBird?.id).map((bird) => (
+                          <SelectItem key={bird.id} value={bird.id} className="text-white hover:bg-[#1A2035]">
+                            {bird.band_number} - {bird.stam || 'No STAM'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-slate-300 text-xs">Mother (Female)</Label>
+                    <Select
+                      value={formData.parent_female_id}
+                      onValueChange={(value) => setFormData({ ...formData, parent_female_id: value })}
+                    >
+                      <SelectTrigger className="bg-[#1A2035] border-white/10 text-white text-sm" data-testid="parent-female-select">
+                        <SelectValue placeholder="Select mother..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#202940] border-white/10 max-h-[200px]">
+                        <SelectItem value="none" className="text-slate-400 hover:bg-[#1A2035]">None</SelectItem>
+                        {birds.filter(b => b.gender === 'female' && b.id !== editingBird?.id).map((bird) => (
+                          <SelectItem key={bird.id} value={bird.id} className="text-white hover:bg-[#1A2035]">
+                            {bird.band_number} - {bird.stam || 'No STAM'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               <div className="flex gap-3 pt-4">
                 <Button

@@ -12,7 +12,9 @@ import {
   Settings,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  BarChart3,
+  GitBranch
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Toaster } from './ui/sonner';
@@ -21,10 +23,12 @@ const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/zones', icon: Grid3X3, label: 'Zones & Cages' },
   { path: '/birds', icon: Bird, label: 'Birds' },
+  { path: '/genealogy', icon: GitBranch, label: 'Family Tree' },
   { path: '/pairs', icon: Heart, label: 'Pairs' },
   { path: '/tasks', icon: ListTodo, label: 'Tasks' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/newborn', icon: Baby, label: 'Newborn' },
+  { path: '/reports', icon: BarChart3, label: 'Reports' },
   { path: '/contacts', icon: Users, label: 'Contacts' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
