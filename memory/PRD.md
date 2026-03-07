@@ -31,10 +31,13 @@ Build a canary breeding control/management web application with a local database
 - ✅ Zones & Cages management with visual grid
 - ✅ Breeding pairs management with clutch tracking
 - ✅ Egg tracking with visual indicators
+- ✅ **Interactive Egg Status** - Click eggs to mark as fertile (green), infertile (red), or hatched (bird icon)
 - ✅ Status transitions (laying → incubating → hatching)
 - ✅ Tasks page grouped by urgency (overdue, today, upcoming)
-- ✅ Calendar view with breeding events
+- ✅ Calendar view with breeding events and manual task creation
 - ✅ Contacts directory for breeders
+- ✅ **Email Notification Settings** - Configure Gmail SMTP with App Password for task alerts
+- ✅ Newborn chicks tracking page
 - ✅ Dark navy theme with custom accent colors
 - ✅ Mobile-responsive sidebar navigation
 
@@ -45,16 +48,24 @@ Build a canary breeding control/management web application with a local database
 - `/api/birds` - Bird registry CRUD
 - `/api/pairs` - Breeding pairs CRUD
 - `/api/clutches` - Clutch management
-- `/api/clutches/{id}/eggs` - Egg tracking
+- `/api/clutches/{id}/eggs` - Egg tracking (POST to add, PUT to update status)
 - `/api/contacts` - Breeder contacts CRUD
 - `/api/dashboard/stats` - Dashboard statistics
 - `/api/dashboard/tasks` - Task list
+- `/api/settings` - Get all settings (breeding & email)
+- `/api/settings/breeding` - Save breeding cycle configuration
+- `/api/settings/email` - Save email notification settings
+- `/api/settings/test-email` - Send test email notification
+- `/api/manual-tasks` - Manual task management (CRUD)
 
 ## Prioritized Backlog
 ### P0 (Critical)
 - [Done] All core features implemented
+- [Done] Interactive egg status feature
+- [Done] Email notification configuration
 
 ### P1 (High Priority)
+- Email notifications sending (requires user to generate Gmail App Password)
 - Bird genealogy tree view
 - Breeding history reports
 - Export data to CSV/PDF
@@ -66,7 +77,14 @@ Build a canary breeding control/management web application with a local database
 - Mobile app version
 
 ## Next Tasks
-1. Add genealogy/family tree visualization for birds
-2. Implement breeding statistics and reports
-3. Add data export functionality (CSV/PDF)
-4. Consider multi-user authentication for shared aviaries
+1. User to configure Gmail App Password for email notifications to work
+2. Add genealogy/family tree visualization for birds
+3. Implement breeding statistics and reports
+4. Add data export functionality (CSV/PDF)
+5. Consider multi-user authentication for shared aviaries
+
+## Notes
+- **Email Notifications**: Currently configured but requires a Gmail App Password (not regular password) to send emails. User needs to:
+  1. Enable 2-Step Verification on their Google Account
+  2. Generate an App Password at Google Account → Security → App passwords
+  3. Enter their Gmail and App Password in the Settings page
