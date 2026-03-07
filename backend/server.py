@@ -232,6 +232,8 @@ class BreedingSettings(BaseModel):
 class EmailSettings(BaseModel):
     notification_email: str = ""
     email_enabled: bool = False
+    smtp_email: str = ""
+    smtp_password: str = ""
 
 # Manual Task Model
 class ManualTask(BaseModel):
@@ -252,14 +254,18 @@ class ManualTaskCreate(BaseModel):
     task_type: str = "manual"
 
 # Email sending function
-async def send_email_notification(to_email: str, subject: str, body: str):
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        logging.warning("Email not configured")
+async def send_email_notification(to_email: str, subject: str, body: str, smtp_email: str = None, smtp_password: str = None):
+    # Use provided credentials or fall back to environment
+    email_from = smtp_email or SMTP_EMAIL
+    password = smtp_password or SMTP_PASSWORD
+    
+    if not email_from or not password:
+        logging.warning("Email not configured - missing SMTP credentials")
         return False
     
     try:
         message = MIMEMultipart()
-        message["From"] = SMTP_EMAIL
+        message["From"] = email_from
         message["To"] = to_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "html"))
@@ -269,8 +275,8 @@ async def send_email_notification(to_email: str, subject: str, body: str):
             hostname=SMTP_HOST,
             port=SMTP_PORT,
             start_tls=True,
-            username=SMTP_EMAIL,
-            password=SMTP_PASSWORD,
+            username=email_from,
+            password=password,
         )
         logging.info(f"Email sent to {to_email}")
         return True
@@ -312,16 +318,24 @@ async def test_email():
     if not email_settings or not email_settings.get("notification_email"):
         raise HTTPException(status_code=400, detail="No notification email configured")
     
+    smtp_email = email_settings.get("smtp_email")
+    smtp_password = email_settings.get("smtp_password")
+    
+    if not smtp_email or not smtp_password:
+        raise HTTPException(status_code=400, detail="SMTP credentials not configured. Please enter your Gmail and App Password in settings.")
+    
     success = await send_email_notification(
         email_settings["notification_email"],
         "🐤 Canary Control - Test Email",
-        "<h2>Test Email</h2><p>Your email notifications are working correctly!</p>"
+        "<h2>Test Email</h2><p>Your email notifications are working correctly!</p>",
+        smtp_email,
+        smtp_password
     )
     
     if success:
         return {"message": "Test email sent successfully"}
     else:
-        raise HTTPException(status_code=500, detail="Failed to send test email")
+        raise HTTPException(status_code=500, detail="Failed to send test email. Please check your Gmail App Password.")
 
 # ============ MANUAL TASKS API ============
 @api_router.post("/manual-tasks", response_model=ManualTask)
@@ -333,12 +347,17 @@ async def create_manual_task(input: ManualTaskCreate, background_tasks: Backgrou
     # Send email notification if enabled
     email_settings = await db.settings.find_one({"type": "email"}, {"_id": 0})
     if email_settings and email_settings.get("email_enabled") and email_settings.get("notification_email"):
-        background_tasks.add_task(
-            send_email_notification,
-            email_settings["notification_email"],
-            f"🐤 New Task: {task.title}",
-            f"<h2>New Task Created</h2><p><strong>{task.title}</strong></p><p>{task.description or 'No description'}</p><p>Due: {task.due_date}</p>"
-        )
+        smtp_email = email_settings.get("smtp_email")
+        smtp_password = email_settings.get("smtp_password")
+        if smtp_email and smtp_password:
+            background_tasks.add_task(
+                send_email_notification,
+                email_settings["notification_email"],
+                f"🐤 New Task: {task.title}",
+                f"<h2>New Task Created</h2><p><strong>{task.title}</strong></p><p>{task.description or 'No description'}</p><p>Due: {task.due_date}</p>",
+                smtp_email,
+                smtp_password
+            )
     
     return task
 

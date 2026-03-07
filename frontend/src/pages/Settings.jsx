@@ -3,7 +3,9 @@ import {
   Save,
   RotateCcw,
   Mail,
-  Send
+  Send,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -25,6 +27,8 @@ const DEFAULT_BREEDING = {
 const DEFAULT_EMAIL = {
   notification_email: '',
   email_enabled: false,
+  smtp_email: '',
+  smtp_password: '',
 };
 
 const STAGE_COLORS = [
@@ -41,6 +45,7 @@ export const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -206,6 +211,57 @@ export const Settings = () => {
               </Button>
             </div>
             <p className="text-xs text-slate-500">Email address to receive task notifications</p>
+          </div>
+
+          {/* Gmail App Password Info */}
+          <div className="p-4 rounded-lg bg-[#FF9800]/10 border border-[#FF9800]/30">
+            <p className="text-sm text-[#FF9800] font-medium mb-2">Gmail Setup Required</p>
+            <p className="text-xs text-slate-300">
+              To send emails via Gmail, you need to use an <strong>App Password</strong> instead of your regular password.
+            </p>
+            <ol className="text-xs text-slate-400 mt-2 space-y-1 list-decimal list-inside">
+              <li>Go to your Google Account → Security → 2-Step Verification</li>
+              <li>At the bottom, click "App passwords"</li>
+              <li>Generate a new app password for "Mail"</li>
+              <li>Enter your Gmail and App Password below</li>
+            </ol>
+          </div>
+
+          {/* SMTP Configuration */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-[#1A2035]">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Sender Gmail Address</Label>
+              <Input
+                type="email"
+                value={emailSettings.smtp_email}
+                onChange={(e) => setEmailSettings({ ...emailSettings, smtp_email: e.target.value })}
+                placeholder="your-canary-app@gmail.com"
+                className="bg-[#202940] border-white/10 text-white"
+                data-testid="smtp-email-input"
+              />
+              <p className="text-xs text-slate-500">Gmail account to send from</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Gmail App Password</Label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={emailSettings.smtp_password}
+                  onChange={(e) => setEmailSettings({ ...emailSettings, smtp_password: e.target.value })}
+                  placeholder="xxxx xxxx xxxx xxxx"
+                  className="bg-[#202940] border-white/10 text-white pr-10"
+                  data-testid="smtp-password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">16-character app password from Google</p>
+            </div>
           </div>
 
           <Button
