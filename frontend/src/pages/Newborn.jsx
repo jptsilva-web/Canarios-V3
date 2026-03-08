@@ -3,10 +3,12 @@ import {
   Baby,
   Search,
   Filter,
-  Eye
+  Eye,
+  Edit2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
 import {
   Select,
   SelectContent,
@@ -31,8 +33,10 @@ import {
 import { pairsApi, birdsApi, clutchesApi, cagesApi } from '../lib/api';
 import { cn, formatDate } from '../lib/utils';
 import { toast } from 'sonner';
+import { useLanguage } from '../lib/LanguageContext';
 
 export const Newborn = () => {
+  const { t } = useLanguage();
   const [newborns, setNewborns] = useState([]);
   const [pairs, setPairs] = useState([]);
   const [birds, setBirds] = useState([]);
@@ -41,6 +45,7 @@ export const Newborn = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
   const [selectedNewborn, setSelectedNewborn] = useState(null);
+  const [editingSex, setEditingSex] = useState(null); // Track which newborn's sex is being edited
 
   useEffect(() => {
     fetchData();
@@ -79,9 +84,11 @@ export const Newborn = () => {
             band_number: egg.band_number,
             banded_date: egg.banded_date,
             hatched_date: egg.hatched_date,
+            sex: egg.sex || 'unknown', // Sex can be: male, female, unknown
             pair_id: pair.id,
             pair_name: pair.name || `Pair ${pair.id.slice(0, 6)}`,
             cage_label: cage?.label || '-',
+            clutch_id: clutch.id,
             father: father ? {
               id: father.id,
               band_number: father.band_number,
@@ -119,6 +126,36 @@ export const Newborn = () => {
   // Get unique years for filter
   const years = [...new Set(newborns.map(n => n.year))].sort((a, b) => b - a);
 
+  // Handle sex change
+  const handleSexChange = async (chick, newSex) => {
+    try {
+      await clutchesApi.updateEgg(chick.clutch_id, chick.id, { sex: newSex });
+      
+      // Update local state
+      setNewborns(prev => prev.map(n => 
+        n.id === chick.id ? { ...n, sex: newSex } : n
+      ));
+      
+      toast.success(t('messages.sexUpdated'));
+      setEditingSex(null);
+    } catch (error) {
+      console.error('Error updating sex:', error);
+      toast.error(t('messages.error'));
+    }
+  };
+
+  // Get sex display text and color
+  const getSexDisplay = (sex) => {
+    switch (sex) {
+      case 'male':
+        return { text: t('common.male'), color: 'text-[#00BFA6]', bg: 'bg-[#00BFA6]/20' };
+      case 'female':
+        return { text: t('common.female'), color: 'text-[#FF69B4]', bg: 'bg-[#FF69B4]/20' };
+      default:
+        return { text: t('common.unknown'), color: 'text-slate-400', bg: 'bg-slate-500/20' };
+    }
+  };
+
   const filteredNewborns = newborns.filter((chick) => {
     const matchesSearch = 
       chick.band_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -143,10 +180,10 @@ export const Newborn = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white font-['Barlow_Condensed'] tracking-tight">
-            Newborn Registry
+            {t('newborns.title')}
           </h1>
           <p className="text-slate-400 mt-1">
-            {newborns.length} banded chicks
+            {newborns.length} {t('newborns.bandedChicks')}
           </p>
         </div>
       </div>
@@ -160,7 +197,7 @@ export const Newborn = () => {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by ring number, pair, or parent..."
+                placeholder={t('newborns.searchPlaceholder')}
                 className="pl-10 bg-[#1A2035] border-white/10 text-white"
                 data-testid="search-input"
               />
@@ -171,7 +208,7 @@ export const Newborn = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-[#202940] border-white/10">
-                <SelectItem value="all" className="text-white hover:bg-[#1A2035]">All Years</SelectItem>
+                <SelectItem value="all" className="text-white hover:bg-[#1A2035]">{t('common.all')} {t('settings.year')}</SelectItem>
                 {years.map(year => (
                   <SelectItem key={year} value={year.toString()} className="text-white hover:bg-[#1A2035]">
                     {year}
@@ -188,9 +225,9 @@ export const Newborn = () => {
         <Card className="bg-[#202940] border-white/5">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Baby className="w-16 h-16 text-slate-500 mb-4" />
-            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">No Banded Chicks Yet</h3>
+            <h3 className="text-xl font-['Barlow_Condensed'] text-white mb-2">{t('newborns.noBandedChicks')}</h3>
             <p className="text-slate-400 text-center max-w-md">
-              When you band newly hatched chicks in your clutches, they will appear here with their lineage information.
+              {t('newborns.noBandedChicksDesc')}
             </p>
           </CardContent>
         </Card>
@@ -200,73 +237,108 @@ export const Newborn = () => {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/5 hover:bg-transparent">
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Ring Number</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Pair</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Cage</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Father</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Mother</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Hatched</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">Banded</TableHead>
-                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase text-right">Details</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.bandNumber')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.gender')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('zones.cage')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.father')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('birds.mother')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('newborn.hatchDate')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase">{t('newborn.bandDate')}</TableHead>
+                  <TableHead className="text-slate-400 font-['Barlow_Condensed'] uppercase text-right">{t('common.details')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredNewborns.map((chick) => (
-                  <TableRow 
-                    key={chick.id} 
-                    className="border-white/5 hover:bg-[#FFC300]/5"
-                    data-testid={`newborn-row-${chick.id}`}
-                  >
-                    <TableCell className="font-mono text-[#FFC300] font-bold">
-                      {chick.band_number || '-'}
-                    </TableCell>
-                    <TableCell className="text-white">
-                      {chick.pair_name}
-                    </TableCell>
-                    <TableCell className="text-slate-300 font-mono">
-                      {chick.cage_label}
-                    </TableCell>
-                    <TableCell>
-                      {chick.father ? (
-                        <div>
-                          <span className="text-[#00BFA6] font-mono">{chick.father.band_number}</span>
-                          {chick.father.stam && (
-                            <span className="text-slate-400 text-xs ml-2">({chick.father.stam})</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {chick.mother ? (
-                        <div>
-                          <span className="text-[#FF69B4] font-mono">{chick.mother.band_number}</span>
-                          {chick.mother.stam && (
-                            <span className="text-slate-400 text-xs ml-2">({chick.mother.stam})</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-slate-400">
-                      {formatDate(chick.hatched_date)}
-                    </TableCell>
-                    <TableCell className="text-slate-400">
-                      {formatDate(chick.banded_date)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <button
-                        onClick={() => setSelectedNewborn(chick)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-[#FFC300] hover:bg-[#FFC300]/10 transition-colors"
-                        data-testid={`view-newborn-${chick.id}`}
-                      >
-                        <Eye size={16} />
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredNewborns.map((chick) => {
+                  const sexDisplay = getSexDisplay(chick.sex);
+                  return (
+                    <TableRow 
+                      key={chick.id} 
+                      className="border-white/5 hover:bg-[#FFC300]/5"
+                      data-testid={`newborn-row-${chick.id}`}
+                    >
+                      <TableCell className="font-mono text-[#FFC300] font-bold">
+                        {chick.band_number || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {editingSex === chick.id ? (
+                          <Select
+                            value={chick.sex}
+                            onValueChange={(value) => handleSexChange(chick, value)}
+                          >
+                            <SelectTrigger className="w-32 h-8 bg-[#1A2035] border-white/10 text-white text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#202940] border-white/10">
+                              <SelectItem value="unknown" className="text-white hover:bg-[#1A2035]">
+                                {t('birds.genderOptions.unknown')}
+                              </SelectItem>
+                              <SelectItem value="male" className="text-white hover:bg-[#1A2035]">
+                                {t('common.male')}
+                              </SelectItem>
+                              <SelectItem value="female" className="text-white hover:bg-[#1A2035]">
+                                {t('common.female')}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <button
+                            onClick={() => setEditingSex(chick.id)}
+                            className={cn(
+                              'px-2 py-1 rounded text-xs font-medium flex items-center gap-1 hover:opacity-80 transition-opacity',
+                              sexDisplay.bg, sexDisplay.color
+                            )}
+                            title={t('newborns.clickToChangeSex')}
+                          >
+                            {sexDisplay.text}
+                            <Edit2 size={10} />
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-300 font-mono">
+                        {chick.cage_label}
+                      </TableCell>
+                      <TableCell>
+                        {chick.father ? (
+                          <div>
+                            <span className="text-[#00BFA6] font-mono">{chick.father.band_number}</span>
+                            {chick.father.stam && (
+                              <span className="text-slate-400 text-xs ml-2">({chick.father.stam})</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {chick.mother ? (
+                          <div>
+                            <span className="text-[#FF69B4] font-mono">{chick.mother.band_number}</span>
+                            {chick.mother.stam && (
+                              <span className="text-slate-400 text-xs ml-2">({chick.mother.stam})</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-400">
+                        {formatDate(chick.hatched_date)}
+                      </TableCell>
+                      <TableCell className="text-slate-400">
+                        {formatDate(chick.banded_date)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <button
+                          onClick={() => setSelectedNewborn(chick)}
+                          className="p-2 rounded-lg text-slate-400 hover:text-[#FFC300] hover:bg-[#FFC300]/10 transition-colors"
+                          data-testid={`view-newborn-${chick.id}`}
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -282,7 +354,7 @@ export const Newborn = () => {
                 <p className="text-3xl font-bold text-[#FFC300] font-['Barlow_Condensed']">
                   {newborns.length}
                 </p>
-                <p className="text-sm text-slate-400">Total Banded</p>
+                <p className="text-sm text-slate-400">{t('newborns.totalBanded')}</p>
               </div>
             </CardContent>
           </Card>
@@ -292,7 +364,7 @@ export const Newborn = () => {
                 <p className="text-3xl font-bold text-[#00BFA6] font-['Barlow_Condensed']">
                   {new Set(newborns.map(n => n.pair_id)).size}
                 </p>
-                <p className="text-sm text-slate-400">Producing Pairs</p>
+                <p className="text-sm text-slate-400">{t('newborns.producingPairs')}</p>
               </div>
             </CardContent>
           </Card>
@@ -302,7 +374,7 @@ export const Newborn = () => {
                 <p className="text-3xl font-bold text-[#FF69B4] font-['Barlow_Condensed']">
                   {newborns.filter(n => n.year === new Date().getFullYear()).length}
                 </p>
-                <p className="text-sm text-slate-400">This Year</p>
+                <p className="text-sm text-slate-400">{t('newborns.thisYear')}</p>
               </div>
             </CardContent>
           </Card>
@@ -315,7 +387,7 @@ export const Newborn = () => {
           <DialogHeader>
             <DialogTitle className="text-xl font-['Barlow_Condensed'] flex items-center gap-2">
               <Baby className="text-[#FFC300]" size={24} />
-              Newborn Details
+              {t('newborns.details')}
             </DialogTitle>
           </DialogHeader>
           {selectedNewborn && (
@@ -324,27 +396,44 @@ export const Newborn = () => {
                 <p className="text-2xl font-bold text-[#FFC300] font-mono">
                   {selectedNewborn.band_number}
                 </p>
-                <p className="text-sm text-slate-400">Ring Number</p>
+                <p className="text-sm text-slate-400">{t('birds.ringNumber')}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-[#1A2035]">
-                  <p className="text-xs text-slate-400 uppercase mb-1">Pair</p>
-                  <p className="text-white font-medium">{selectedNewborn.pair_name}</p>
-                  <p className="text-xs text-slate-500">Cage {selectedNewborn.cage_label}</p>
+                  <p className="text-xs text-slate-400 uppercase mb-1">{t('birds.gender')}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      'px-2 py-1 rounded text-sm font-medium',
+                      getSexDisplay(selectedNewborn.sex).bg,
+                      getSexDisplay(selectedNewborn.sex).color
+                    )}>
+                      {getSexDisplay(selectedNewborn.sex).text}
+                    </span>
+                  </div>
                 </div>
                 <div className="p-3 rounded-lg bg-[#1A2035]">
-                  <p className="text-xs text-slate-400 uppercase mb-1">Hatched</p>
+                  <p className="text-xs text-slate-400 uppercase mb-1">{t('zones.cage')}</p>
+                  <p className="text-white font-medium">{selectedNewborn.cage_label}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-[#1A2035]">
+                  <p className="text-xs text-slate-400 uppercase mb-1">{t('pairs.eggStatus.hatched')}</p>
                   <p className="text-white">{formatDate(selectedNewborn.hatched_date)}</p>
-                  <p className="text-xs text-slate-500">Banded: {formatDate(selectedNewborn.banded_date)}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-[#1A2035]">
+                  <p className="text-xs text-slate-400 uppercase mb-1">{t('newborns.banded')}</p>
+                  <p className="text-white">{formatDate(selectedNewborn.banded_date)}</p>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm text-slate-400 uppercase font-['Barlow_Condensed']">Parents</p>
+                <p className="text-sm text-slate-400 uppercase font-['Barlow_Condensed']">{t('genealogy.parents')}</p>
                 
                 <div className="p-3 rounded-lg bg-[#1A2035] border-l-4 border-[#00BFA6]">
-                  <p className="text-xs text-[#00BFA6] uppercase mb-1">Father</p>
+                  <p className="text-xs text-[#00BFA6] uppercase mb-1">{t('genealogy.father')}</p>
                   {selectedNewborn.father ? (
                     <>
                       <p className="text-white font-mono">{selectedNewborn.father.band_number}</p>
@@ -353,12 +442,12 @@ export const Newborn = () => {
                       )}
                     </>
                   ) : (
-                    <p className="text-slate-500">Not assigned</p>
+                    <p className="text-slate-500">{t('common.notAssigned')}</p>
                   )}
                 </div>
 
                 <div className="p-3 rounded-lg bg-[#1A2035] border-l-4 border-[#FF69B4]">
-                  <p className="text-xs text-[#FF69B4] uppercase mb-1">Mother</p>
+                  <p className="text-xs text-[#FF69B4] uppercase mb-1">{t('genealogy.mother')}</p>
                   {selectedNewborn.mother ? (
                     <>
                       <p className="text-white font-mono">{selectedNewborn.mother.band_number}</p>
@@ -367,7 +456,7 @@ export const Newborn = () => {
                       )}
                     </>
                   ) : (
-                    <p className="text-slate-500">Not assigned</p>
+                    <p className="text-slate-500">{t('common.notAssigned')}</p>
                   )}
                 </div>
               </div>
