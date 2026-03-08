@@ -120,9 +120,17 @@ export const Tasks = () => {
 
   const handleCompleteTask = async (task) => {
     try {
-      // For now, just remove the task from the list (simulating completion)
-      // In a real implementation, this would update the clutch status in the backend
-      setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
+      // Remove only this specific task from the list
+      // Using a more robust comparison
+      setTasks(prevTasks => {
+        const newTasks = prevTasks.filter(t => {
+          // Compare by unique identifiers
+          if (task.id && t.id) return t.id !== task.id;
+          // Fallback: compare by pair_id + type + due_date
+          return !(t.pair_id === task.pair_id && t.type === task.type && t.due_date === task.due_date);
+        });
+        return newTasks;
+      });
       toast.success(t('tasks.taskCompleted'));
     } catch (error) {
       toast.error(t('messages.error'));

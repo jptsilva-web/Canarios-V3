@@ -33,11 +33,12 @@ import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
 
-// Stage colors - Simplified breeding stages
+// Stage colors - Breeding stages
 const STAGE_COLORS = {
   empty: { bg: 'bg-[#151B2B]', border: 'border-[#2A3548]', text: 'text-slate-400', color: '#64748B' },
   paired: { bg: 'bg-[#3B82F6]/20', border: 'border-[#3B82F6]', text: 'text-[#3B82F6]', color: '#3B82F6' }, // Blue - Emparelhado
-  incubating: { bg: 'bg-[#F97316]/20', border: 'border-[#F97316]', text: 'text-[#F97316]', color: '#F97316' }, // Orange - Incubação (ovos postos)
+  laying: { bg: 'bg-[#EC4899]/20', border: 'border-[#EC4899]', text: 'text-[#EC4899]', color: '#EC4899' }, // Pink - Postura (ovos frescos)
+  incubating: { bg: 'bg-[#F97316]/20', border: 'border-[#F97316]', text: 'text-[#F97316]', color: '#F97316' }, // Orange - Incubação (ovos férteis)
   born: { bg: 'bg-[#22C55E]/20', border: 'border-[#22C55E]', text: 'text-[#22C55E]', color: '#22C55E' }, // Green - Nascidos
   banded: { bg: 'bg-[#FACC15]/20', border: 'border-[#FACC15]', text: 'text-[#FACC15]', color: '#FACC15' }, // Yellow - Anilhados
   weaning: { bg: 'bg-[#A855F7]/20', border: 'border-[#A855F7]', text: 'text-[#A855F7]', color: '#A855F7' }, // Purple - Desmame
@@ -53,6 +54,7 @@ const CageCell = ({ cage, pair, cageStatus, onClick, t }) => {
     const labels = {
       'empty': t('zones.empty'),
       'paired': t('zones.paired'),
+      'laying': t('pairs.clutchStatus.laying'),
       'incubating': t('pairs.clutchStatus.incubating'),
       'born': t('zones.born'),
       'banded': t('zones.banded'),
@@ -126,12 +128,14 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     // Count eggs by status
     const hatchedAndBanded = allEggs.filter(e => e.status === 'hatched' && e.band_number);
     const hatchedNotBanded = allEggs.filter(e => e.status === 'hatched' && !e.band_number);
-    const fertile = allEggs.filter(e => e.status === 'fertile' || e.status === 'fresh');
+    const fertile = allEggs.filter(e => e.status === 'fertile');
+    const fresh = allEggs.filter(e => e.status === 'fresh');
     
     // Determine status based on eggs:
     // - If any eggs hatched and banded → 'banded'
     // - If any eggs hatched but not banded → 'born'
-    // - If eggs exist (fertile/fresh) but none hatched → 'incubating'
+    // - If fertile eggs exist → 'incubating'
+    // - If only fresh eggs exist → 'laying'
     if (hatchedAndBanded.length > 0) {
       return 'banded';
     }
@@ -141,12 +145,16 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     if (fertile.length > 0) {
       return 'incubating';
     }
+    if (fresh.length > 0) {
+      return 'laying';
+    }
     
     return null;
   };
 
   // Count cages by status
   const statusCounts = {
+    laying: 0,
     incubating: 0,
     born: 0,
     banded: 0,
@@ -174,6 +182,11 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
             {pairedCagesCount > 0 && (
               <span className="text-xs px-2 py-0.5 rounded bg-[#3B82F6]/20 text-[#3B82F6]">
                 {pairedCagesCount} {t('zones.paired')}
+              </span>
+            )}
+            {statusCounts.laying > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-[#EC4899]/20 text-[#EC4899]">
+                {statusCounts.laying} {t('pairs.clutchStatus.laying')}
               </span>
             )}
             {statusCounts.incubating > 0 && (
@@ -462,6 +475,10 @@ export const Zones = () => {
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded bg-[#3B82F6]/20 border border-[#3B82F6]" />
               <span className="text-[#3B82F6]">{t('zones.paired')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#EC4899]/20 border border-[#EC4899]" />
+              <span className="text-[#EC4899]">{t('pairs.clutchStatus.laying')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded bg-[#F97316]/20 border border-[#F97316]" />

@@ -57,7 +57,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
   const [bandNumber, setBandNumber] = useState(egg.band_number || '');
   const [updating, setUpdating] = useState(false);
 
-  const canChangeStatus = clutchStatus === 'incubating' || clutchStatus === 'completed';
+  const canChangeStatus = clutchStatus === 'laying' || clutchStatus === 'incubating' || clutchStatus === 'hatching' || clutchStatus === 'completed';
   
   const handleStatusChange = async (newStatus) => {
     setUpdating(true);
@@ -537,11 +537,13 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
     
     const hatchedAndBanded = allEggs.filter(e => e.status === 'hatched' && e.band_number);
     const hatchedNotBanded = allEggs.filter(e => e.status === 'hatched' && !e.band_number);
-    const fertile = allEggs.filter(e => e.status === 'fertile' || e.status === 'fresh');
+    const fertile = allEggs.filter(e => e.status === 'fertile');
+    const fresh = allEggs.filter(e => e.status === 'fresh');
     
     if (hatchedAndBanded.length > 0) return 'banded';
     if (hatchedNotBanded.length > 0) return 'born';
     if (fertile.length > 0) return 'incubating';
+    if (fresh.length > 0) return 'laying';
     return null;
   };
   
@@ -551,6 +553,8 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
     if (!status) return 'bg-[#202940] border-white/5';
     
     switch (status) {
+      case 'laying':
+        return 'bg-[#202940] border-l-4 border-l-[#EC4899] border-white/5';
       case 'incubating':
         return 'bg-[#202940] border-l-4 border-l-[#F97316] border-white/5';
       case 'born':
@@ -635,23 +639,27 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
           
           const allEggs = clutches.flatMap(c => c.eggs || []);
           const hatchedCount = allEggs.filter(e => e.status === 'hatched').length;
-          const fertileCount = allEggs.filter(e => e.status === 'fertile' || e.status === 'fresh').length;
+          const fertileCount = allEggs.filter(e => e.status === 'fertile').length;
+          const freshCount = allEggs.filter(e => e.status === 'fresh').length;
           
           return (
             <div className="flex items-center gap-2 text-sm">
               <span className={cn(
                 'px-2 py-0.5 rounded text-xs font-medium uppercase',
+                eggStatus === 'laying' && 'bg-[#EC4899]/20 text-[#EC4899]',
                 eggStatus === 'incubating' && 'bg-[#F97316]/20 text-[#F97316]',
                 eggStatus === 'born' && 'bg-[#22C55E]/20 text-[#22C55E]',
                 eggStatus === 'banded' && 'bg-[#FACC15]/20 text-[#FACC15]',
                 eggStatus === 'weaning' && 'bg-[#A855F7]/20 text-[#A855F7]',
               )}>
+                {eggStatus === 'laying' && t('pairs.clutchStatus.laying')}
                 {eggStatus === 'incubating' && t('pairs.clutchStatus.incubating')}
                 {eggStatus === 'born' && t('zones.born')}
                 {eggStatus === 'banded' && t('zones.banded')}
                 {eggStatus === 'weaning' && t('zones.weaning')}
               </span>
               <span className="text-slate-400">
+                {eggStatus === 'laying' && `${freshCount} ${t('pairs.eggs').toLowerCase()}`}
                 {eggStatus === 'incubating' && `${fertileCount} ${t('pairs.eggs').toLowerCase()}`}
                 {(eggStatus === 'born' || eggStatus === 'banded') && `${hatchedCount} ${t('zones.born').toLowerCase()}`}
               </span>
