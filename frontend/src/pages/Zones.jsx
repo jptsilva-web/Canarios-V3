@@ -134,15 +134,18 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     // Check if any clutch is in incubating status (user started incubation)
     const hasIncubatingClutch = activeClutches.some(c => c.status === 'incubating');
     
+    // Check if any clutch is in hatching status (eggs are hatching)
+    const hasHatchingClutch = activeClutches.some(c => c.status === 'hatching');
+    
     // Determine status based on eggs:
     // - If any eggs hatched and banded → 'banded'
-    // - If any eggs hatched but not banded → 'born'
+    // - If any eggs hatched but not banded OR clutch is hatching → 'born'
     // - If fertile eggs exist OR clutch is incubating → 'incubating'
     // - If only fresh eggs exist → 'laying'
     if (hatchedAndBanded.length > 0) {
       return 'banded';
     }
-    if (hatchedNotBanded.length > 0) {
+    if (hatchedNotBanded.length > 0 || hasHatchingClutch) {
       return 'born';
     }
     if (fertile.length > 0 || hasIncubatingClutch) {
