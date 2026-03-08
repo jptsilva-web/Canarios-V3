@@ -242,6 +242,7 @@ export const translations = {
       legend: 'Legenda',
       weaning: 'Desmame',
       born: 'Nascidos',
+      banded: 'Anilhados',
     },
     // Calendar
     calendar: {
@@ -651,6 +652,7 @@ export const translations = {
       legend: 'Legend',
       weaning: 'Weaning',
       born: 'Born',
+      banded: 'Banded',
     },
     // Calendar
     calendar: {
@@ -1060,6 +1062,7 @@ export const translations = {
       legend: 'Leyenda',
       weaning: 'Destete',
       born: 'Nacidos',
+      banded: 'Anillados',
     },
     // Calendar
     calendar: {

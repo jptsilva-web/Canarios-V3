@@ -467,6 +467,13 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
   const [showClutches, setShowClutches] = useState(isHighlighted || false);
   const [loading, setLoading] = useState(true);
 
+  // Auto-expand when highlighted
+  useEffect(() => {
+    if (isHighlighted) {
+      setShowClutches(true);
+    }
+  }, [isHighlighted]);
+
   const cage = cages.find(c => c.id === pair.cage_id);
   const male = birds.find(b => b.id === pair.male_id);
   const female = birds.find(b => b.id === pair.female_id);
@@ -520,23 +527,34 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
 
   const activeClutch = clutches.find(c => c.status !== 'completed');
   
-  // Get card background color based on active clutch status
+  // Calculate real status based on eggs (not just clutch status)
+  const getEggBasedStatus = () => {
+    // Check all clutches, not just active ones
+    const allEggs = clutches.flatMap(c => c.eggs || []);
+    if (allEggs.length === 0) return null;
+    
+    const hatchedAndBanded = allEggs.filter(e => e.status === 'hatched' && e.band_number);
+    const hatchedNotBanded = allEggs.filter(e => e.status === 'hatched' && !e.band_number);
+    const fertile = allEggs.filter(e => e.status === 'fertile' || e.status === 'fresh');
+    
+    if (hatchedAndBanded.length > 0) return 'banded';
+    if (hatchedNotBanded.length > 0) return 'born';
+    if (fertile.length > 0) return 'incubating';
+    return null;
+  };
+  
+  // Get card background color based on egg status
   const getCardStyle = () => {
-    if (!activeClutch) return 'bg-[#202940] border-white/5';
+    const status = getEggBasedStatus();
+    if (!status) return 'bg-[#202940] border-white/5';
     
-    // Check if there are hatched eggs
-    const hasHatchedEggs = activeClutch.eggs?.some(egg => egg.status === 'hatched');
-    
-    switch (activeClutch.status) {
-      case 'laying':
-        return 'bg-[#202940] border-l-4 border-l-[#FACC15] border-white/5';
+    switch (status) {
       case 'incubating':
         return 'bg-[#202940] border-l-4 border-l-[#F97316] border-white/5';
-      case 'hatching':
-        // If there are hatched eggs, show green (born), otherwise teal (hatching)
-        return hasHatchedEggs 
-          ? 'bg-[#202940] border-l-4 border-l-[#22C55E] border-white/5'
-          : 'bg-[#202940] border-l-4 border-l-[#14B8A6] border-white/5';
+      case 'born':
+        return 'bg-[#202940] border-l-4 border-l-[#22C55E] border-white/5';
+      case 'banded':
+        return 'bg-[#202940] border-l-4 border-l-[#FACC15] border-white/5';
       case 'weaning':
         return 'bg-[#202940] border-l-4 border-l-[#A855F7] border-white/5';
       default:
@@ -608,30 +626,36 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
           </div>
         </div>
 
-        {/* Status */}
-        {activeClutch && (
-          <div className="flex items-center gap-2 text-sm">
-            {(() => {
-              const hasHatchedEggs = activeClutch.eggs?.some(egg => egg.status === 'hatched');
-              const statusKey = (activeClutch.status === 'hatching' && hasHatchedEggs) ? 'born' : activeClutch.status;
-              return (
-                <span className={cn(
-                  'px-2 py-0.5 rounded text-xs font-medium uppercase',
-                  activeClutch.status === 'laying' && 'bg-[#FACC15]/20 text-[#FACC15]',
-                  activeClutch.status === 'incubating' && 'bg-[#F97316]/20 text-[#F97316]',
-                  activeClutch.status === 'hatching' && !hasHatchedEggs && 'bg-[#14B8A6]/20 text-[#14B8A6]',
-                  activeClutch.status === 'hatching' && hasHatchedEggs && 'bg-[#22C55E]/20 text-[#22C55E]',
-                  activeClutch.status === 'weaning' && 'bg-[#A855F7]/20 text-[#A855F7]',
-                )}>
-                  {statusKey === 'born' ? t('zones.born') : t(`pairs.clutchStatus.${activeClutch.status}`)}
-                </span>
-              );
-            })()}
-            <span className="text-slate-400">
-              {activeClutch.eggs?.length || 0} {t('pairs.eggs').toLowerCase()}
-            </span>
-          </div>
-        )}
+        {/* Status Badge based on eggs */}
+        {(() => {
+          const eggStatus = getEggBasedStatus();
+          if (!eggStatus) return null;
+          
+          const allEggs = clutches.flatMap(c => c.eggs || []);
+          const hatchedCount = allEggs.filter(e => e.status === 'hatched').length;
+          const fertileCount = allEggs.filter(e => e.status === 'fertile' || e.status === 'fresh').length;
+          
+          return (
+            <div className="flex items-center gap-2 text-sm">
+              <span className={cn(
+                'px-2 py-0.5 rounded text-xs font-medium uppercase',
+                eggStatus === 'incubating' && 'bg-[#F97316]/20 text-[#F97316]',
+                eggStatus === 'born' && 'bg-[#22C55E]/20 text-[#22C55E]',
+                eggStatus === 'banded' && 'bg-[#FACC15]/20 text-[#FACC15]',
+                eggStatus === 'weaning' && 'bg-[#A855F7]/20 text-[#A855F7]',
+              )}>
+                {eggStatus === 'incubating' && t('pairs.clutchStatus.incubating')}
+                {eggStatus === 'born' && t('zones.born')}
+                {eggStatus === 'banded' && t('zones.banded')}
+                {eggStatus === 'weaning' && t('zones.weaning')}
+              </span>
+              <span className="text-slate-400">
+                {eggStatus === 'incubating' && `${fertileCount} ${t('pairs.eggs').toLowerCase()}`}
+                {(eggStatus === 'born' || eggStatus === 'banded') && `${hatchedCount} ${t('zones.born').toLowerCase()}`}
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Clutches Toggle */}
         <button
