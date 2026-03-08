@@ -47,6 +47,42 @@ const TaskItem = ({ task, onClick, t }) => {
   const days = getDaysUntil(task.due_date);
   const isUrgent = days !== null && days <= 1;
   
+  // Translate task type
+  const getTaskTypeLabel = (type) => {
+    const typeMap = {
+      'LAYING': t('pairs.clutchStatus.laying'),
+      'INCUBATING': t('pairs.clutchStatus.incubating'),
+      'HATCHING': t('zones.born'),
+      'BANDING': t('zones.banded'),
+      'WEANING': t('zones.weaning'),
+    };
+    return typeMap[type?.toUpperCase()] || type;
+  };
+
+  // Translate days label
+  const getTranslatedDaysLabel = (d) => {
+    if (d === null) return '';
+    if (d === 0) return t('tasks.today');
+    if (d === 1) return t('dashboard.tomorrow');
+    if (d === -1) return t('dashboard.yesterday');
+    if (d > 0) return `${t('dashboard.inDays').replace('{days}', d)}`;
+    return `${t('dashboard.daysAgo').replace('{days}', Math.abs(d))}`;
+  };
+
+  // Translate task details
+  const getTranslatedDetails = (details) => {
+    if (!details) return '';
+    // Replace common English phrases
+    return details
+      .replace('Currently laying', t('dashboard.currentlyLaying'))
+      .replace('eggs', t('pairs.eggs').toLowerCase())
+      .replace('egg', t('pairs.egg'))
+      .replace('Check fertility', t('dashboard.checkFertility'))
+      .replace('Expected hatch', t('pairs.expectedHatch'))
+      .replace('Ready to band', t('dashboard.readyToBand'))
+      .replace('Ready for weaning', t('dashboard.readyForWeaning'));
+  };
+  
   return (
     <div 
       onClick={onClick}
@@ -66,7 +102,7 @@ const TaskItem = ({ task, onClick, t }) => {
               color: getTaskTypeColor(task.type)
             }}
           >
-            {task.type}
+            {getTaskTypeLabel(task.type)}
           </span>
           {isUrgent && (
             <span className="text-xs bg-[#E91E63]/20 text-[#E91E63] px-2 py-0.5 rounded">
@@ -77,12 +113,12 @@ const TaskItem = ({ task, onClick, t }) => {
         <p className="text-white font-medium mt-1 truncate">
           {task.cage_label} - {task.pair_name || t('pairs.pairName')}
         </p>
-        <p className="text-sm text-slate-400 truncate">{task.details}</p>
+        <p className="text-sm text-slate-400 truncate">{getTranslatedDetails(task.details)}</p>
       </div>
       <div className="text-right">
         <p className="text-xs text-slate-500">{formatDate(task.due_date)}</p>
         <p className={`text-sm font-medium ${isUrgent ? 'text-[#E91E63]' : 'text-slate-300'}`}>
-          {getDaysLabel(days)}
+          {getTranslatedDaysLabel(days)}
         </p>
       </div>
       <ChevronRight size={20} className="text-slate-500 group-hover:text-[#FFC300] transition-colors" />

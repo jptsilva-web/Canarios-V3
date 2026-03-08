@@ -157,6 +157,14 @@ export const translations = {
       hatchingNow: 'A Nascer Agora',
       noUpcomingTasks: 'Nenhuma tarefa próxima',
       noTasksHint: 'Comece por criar um casal e adicionar uma postura',
+      tomorrow: 'Amanhã',
+      yesterday: 'Ontem',
+      inDays: 'Em {days} dias',
+      daysAgo: 'Há {days} dias',
+      currentlyLaying: 'A pôr atualmente',
+      checkFertility: 'Verificar fertilidade',
+      readyToBand: 'Pronto para anilhar',
+      readyForWeaning: 'Pronto para desmame',
     },
     // Birds
     birds: {
@@ -593,6 +601,14 @@ export const translations = {
       hatchingNow: 'Hatching Now',
       noUpcomingTasks: 'No upcoming tasks',
       noTasksHint: 'Start by creating a pair and adding a clutch',
+      tomorrow: 'Tomorrow',
+      yesterday: 'Yesterday',
+      inDays: 'In {days} days',
+      daysAgo: '{days} days ago',
+      currentlyLaying: 'Currently laying',
+      checkFertility: 'Check fertility',
+      readyToBand: 'Ready to band',
+      readyForWeaning: 'Ready for weaning',
     },
     // Birds
     birds: {
@@ -1029,6 +1045,14 @@ export const translations = {
       hatchingNow: 'Naciendo Ahora',
       noUpcomingTasks: 'Sin tareas próximas',
       noTasksHint: 'Empieza creando una pareja y añadiendo una puesta',
+      tomorrow: 'Mañana',
+      yesterday: 'Ayer',
+      inDays: 'En {days} días',
+      daysAgo: 'Hace {days} días',
+      currentlyLaying: 'Poniendo actualmente',
+      checkFertility: 'Verificar fertilidad',
+      readyToBand: 'Listo para anillar',
+      readyForWeaning: 'Listo para destete',
     },
     // Birds
     birds: {
