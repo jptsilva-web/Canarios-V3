@@ -262,16 +262,8 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
               </div>
               
               <hr className="border-white/10 my-1" />
-              <p className="text-xs text-slate-500 px-2">{t('pairs.markAsHatched')}</p>
-              <div className="px-2 py-1">
-                <Label className="text-slate-300 text-xs">{t('pairs.ringNumber')}</Label>
-                <Input
-                  value={bandNumber}
-                  onChange={(e) => setBandNumber(e.target.value)}
-                  placeholder="e.g., PT2025-001"
-                  className="bg-[#1A2035] border-white/10 text-white text-sm h-8 mt-1"
-                />
-              </div>
+              
+              {/* First: Mark as hatched (born) */}
               <button
                 onClick={() => handleStatusChange('hatched')}
                 disabled={updating}
@@ -281,8 +273,20 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
                 <span className="text-sm text-white">{t('pairs.eggStatus.hatched')}</span>
               </button>
               
+              {/* Second: Ring number field (optional - can band at birth) */}
+              <div className="px-2 py-1">
+                <Label className="text-slate-300 text-xs">{t('pairs.ringNumber')} ({t('common.optional')})</Label>
+                <Input
+                  value={bandNumber}
+                  onChange={(e) => setBandNumber(e.target.value)}
+                  placeholder="e.g., PT2025-001"
+                  className="bg-[#1A2035] border-white/10 text-white text-sm h-8 mt-1"
+                />
+              </div>
+              
               <hr className="border-white/10 my-1" />
               
+              {/* Third: Mark as dead */}
               <button
                 onClick={() => handleStatusChange('dead')}
                 disabled={updating}
