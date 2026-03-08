@@ -57,7 +57,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
   const [bandNumber, setBandNumber] = useState(egg.band_number || '');
   const [updating, setUpdating] = useState(false);
 
-  const canChangeStatus = clutchStatus === 'incubating' || clutchStatus === 'hatching' || clutchStatus === 'laying' || clutchStatus === 'completed';
+  const canChangeStatus = clutchStatus === 'incubating' || clutchStatus === 'completed';
   
   const handleStatusChange = async (newStatus) => {
     setUpdating(true);
@@ -800,6 +800,13 @@ export const Pairs = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate: both male and female are required
+    if (!formData.male_id || !formData.female_id) {
+      toast.error(t('messages.pairRequiresBoth'));
+      return;
+    }
+    
     try {
       if (editingPair) {
         await pairsApi.update(editingPair.id, formData);
@@ -949,7 +956,9 @@ export const Pairs = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">{t('common.male')}</Label>
+                  <Label className="text-slate-300">
+                    {t('common.male')} <span className="text-red-500">*</span>
+                  </Label>
                   <Select
                     value={formData.male_id}
                     onValueChange={(value) => {
@@ -979,7 +988,9 @@ export const Pairs = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300">{t('common.female')}</Label>
+                  <Label className="text-slate-300">
+                    {t('common.female')} <span className="text-red-500">*</span>
+                  </Label>
                   <Select
                     value={formData.female_id}
                     onValueChange={(value) => {
@@ -1020,8 +1031,9 @@ export const Pairs = () => {
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
+                  className="flex-1 bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid="save-pair-btn"
+                  disabled={!formData.male_id || !formData.female_id}
                 >
                   {editingPair ? t('common.update') : t('common.create')}
                 </Button>

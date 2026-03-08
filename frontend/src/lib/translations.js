@@ -87,6 +87,7 @@ export const translations = {
       pairLoadError: 'Erro ao carregar casais',
       pairSaveError: 'Erro ao guardar casal',
       pairDeleteError: 'Erro ao eliminar casal',
+      pairRequiresBoth: 'É obrigatório selecionar um macho e uma fêmea',
       // Clutches
       clutchCreated: 'Postura adicionada',
       clutchDeleted: 'Postura eliminada',
@@ -498,6 +499,7 @@ export const translations = {
       pairLoadError: 'Failed to load pairs',
       pairSaveError: 'Failed to save pair',
       pairDeleteError: 'Failed to delete pair',
+      pairRequiresBoth: 'Both male and female are required',
       // Clutches
       clutchCreated: 'New clutch added',
       clutchDeleted: 'Clutch deleted',
@@ -909,6 +911,7 @@ export const translations = {
       pairLoadError: 'Error al cargar parejas',
       pairSaveError: 'Error al guardar pareja',
       pairDeleteError: 'Error al eliminar pareja',
+      pairRequiresBoth: 'Es obligatorio seleccionar un macho y una hembra',
       // Clutches
       clutchCreated: 'Nueva puesta añadida',
       clutchDeleted: 'Puesta eliminada',
