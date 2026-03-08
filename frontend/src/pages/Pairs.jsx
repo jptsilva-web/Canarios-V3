@@ -465,7 +465,7 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg, t }) => {
 const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
   const [clutches, setClutches] = useState([]);
   const [showClutches, setShowClutches] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const cage = cages.find(c => c.id === pair.cage_id);
   const male = birds.find(b => b.id === pair.male_id);
@@ -483,11 +483,10 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
     }
   }, [pair.id]);
 
+  // Load clutches immediately on mount
   useEffect(() => {
-    if (showClutches) {
-      fetchClutches();
-    }
-  }, [showClutches, fetchClutches]);
+    fetchClutches();
+  }, [fetchClutches]);
 
   const handleAddClutch = async () => {
     try {
@@ -520,9 +519,27 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
   };
 
   const activeClutch = clutches.find(c => c.status !== 'completed');
+  
+  // Get card background color based on active clutch status
+  const getCardStyle = () => {
+    if (!activeClutch) return 'bg-[#202940] border-white/5';
+    
+    switch (activeClutch.status) {
+      case 'laying':
+        return 'bg-[#202940] border-l-4 border-l-[#FFC300] border-white/5';
+      case 'incubating':
+        return 'bg-[#202940] border-l-4 border-l-[#FF9800] border-white/5';
+      case 'hatching':
+        return 'bg-[#202940] border-l-4 border-l-[#00BFA6] border-white/5';
+      case 'weaning':
+        return 'bg-[#202940] border-l-4 border-l-[#9C27B0] border-white/5';
+      default:
+        return 'bg-[#202940] border-white/5';
+    }
+  };
 
   return (
-    <Card className="bg-[#202940] border-white/5 hover:border-[#FFC300]/30 transition-all">
+    <Card className={cn(getCardStyle(), 'hover:border-[#FFC300]/30 transition-all')}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>
@@ -581,8 +598,14 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
         {/* Status */}
         {activeClutch && (
           <div className="flex items-center gap-2 text-sm">
-            <span className={cn('status-badge', getStatusColor(activeClutch.status))}>
-              {activeClutch.status}
+            <span className={cn(
+              'px-2 py-0.5 rounded text-xs font-medium uppercase',
+              activeClutch.status === 'laying' && 'bg-[#FFC300]/20 text-[#FFC300]',
+              activeClutch.status === 'incubating' && 'bg-[#FF9800]/20 text-[#FF9800]',
+              activeClutch.status === 'hatching' && 'bg-[#00BFA6]/20 text-[#00BFA6]',
+              activeClutch.status === 'weaning' && 'bg-[#9C27B0]/20 text-[#9C27B0]',
+            )}>
+              {t(`pairs.clutchStatus.${activeClutch.status}`)}
             </span>
             <span className="text-slate-400">
               {activeClutch.eggs?.length || 0} {t('pairs.eggs').toLowerCase()}
@@ -597,7 +620,7 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
           data-testid={`toggle-clutches-${pair.id}`}
         >
           <span className="text-sm text-slate-300">
-            {t('pairs.clutches')} ({clutches.length})
+            {t('pairs.clutches')} ({loading ? '...' : clutches.length})
           </span>
           <ChevronRight 
             size={16} 
