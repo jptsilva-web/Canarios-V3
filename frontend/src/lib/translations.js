@@ -51,6 +51,7 @@ export const translations = {
       update: 'Atualizar',
       create: 'Criar',
       view: 'Ver',
+      viewAll: 'Ver Tudo',
       required: 'obrigatório',
       other: 'Outro',
     },
@@ -151,6 +152,11 @@ export const translations = {
       recentActivity: 'Atividade Recente',
       upcomingTasks: 'Próximas Tarefas',
       quickStats: 'Estatísticas Rápidas',
+      totalPairs: 'Total de Casais',
+      totalClutches: 'Total de Posturas',
+      hatchingNow: 'A Nascer Agora',
+      noUpcomingTasks: 'Nenhuma tarefa próxima',
+      noTasksHint: 'Comece por criar um casal e adicionar uma postura',
     },
     // Birds
     birds: {
@@ -481,6 +487,7 @@ export const translations = {
       update: 'Update',
       create: 'Create',
       view: 'View',
+      viewAll: 'View All',
       required: 'required',
       other: 'Other',
     },
@@ -581,6 +588,11 @@ export const translations = {
       recentActivity: 'Recent Activity',
       upcomingTasks: 'Upcoming Tasks',
       quickStats: 'Quick Stats',
+      totalPairs: 'Total Pairs',
+      totalClutches: 'Total Clutches',
+      hatchingNow: 'Hatching Now',
+      noUpcomingTasks: 'No upcoming tasks',
+      noTasksHint: 'Start by creating a pair and adding a clutch',
     },
     // Birds
     birds: {
@@ -911,6 +923,7 @@ export const translations = {
       update: 'Actualizar',
       create: 'Crear',
       view: 'Ver',
+      viewAll: 'Ver Todo',
       required: 'obligatorio',
       other: 'Otro',
     },
@@ -1011,6 +1024,11 @@ export const translations = {
       recentActivity: 'Actividad Reciente',
       upcomingTasks: 'Próximas Tareas',
       quickStats: 'Estadísticas Rápidas',
+      totalPairs: 'Total de Parejas',
+      totalClutches: 'Total de Puestas',
+      hatchingNow: 'Naciendo Ahora',
+      noUpcomingTasks: 'Sin tareas próximas',
+      noTasksHint: 'Empieza creando una pareja y añadiendo una puesta',
     },
     // Birds
     birds: {
