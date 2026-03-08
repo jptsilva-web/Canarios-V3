@@ -57,7 +57,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
   const [bandNumber, setBandNumber] = useState(egg.band_number || '');
   const [updating, setUpdating] = useState(false);
 
-  const canChangeStatus = clutchStatus === 'incubating' || clutchStatus === 'hatching';
+  const canChangeStatus = clutchStatus === 'incubating' || clutchStatus === 'hatching' || clutchStatus === 'laying' || clutchStatus === 'completed';
   
   const handleStatusChange = async (newStatus) => {
     setUpdating(true);
@@ -228,9 +228,11 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
               <span className="text-sm text-white">{t('pairs.eggStatus.infertile')}</span>
             </button>
             
-            {clutchStatus === 'hatching' && egg.status === 'fertile' && (
+            {/* Show hatch option when egg is fertile or fresh */}
+            {(egg.status === 'fertile' || egg.status === 'fresh') && (
               <>
                 <hr className="border-white/10 my-1" />
+                <p className="text-xs text-slate-500 px-2">{t('pairs.markAsHatched')}</p>
                 <div className="px-2 py-1">
                   <Label className="text-slate-300 text-xs">{t('pairs.ringNumber')}</Label>
                   <Input

@@ -217,6 +217,7 @@ export const translations = {
       bandChick: 'Anilhar Cria',
       ringNumber: 'Número da Anilha',
       markAsDead: 'Marcar como Morto',
+      markAsHatched: 'Nasceu? Marcar como nascido:',
       clickToChange: 'Clique nos ovos para alterar estado',
     },
     // Zones
@@ -627,6 +628,7 @@ export const translations = {
       bandChick: 'Band Chick',
       ringNumber: 'Ring Number',
       markAsDead: 'Mark as Dead',
+      markAsHatched: 'Hatched? Mark as born:',
       clickToChange: 'Click eggs to change status',
     },
     // Zones
@@ -1037,6 +1039,7 @@ export const translations = {
       bandChick: 'Anillar Cría',
       ringNumber: 'Número de Anilla',
       markAsDead: 'Marcar como Muerto',
+      markAsHatched: '¿Nació? Marcar como nacido:',
       clickToChange: 'Haz clic en los huevos para cambiar estado',
     },
     // Zones
