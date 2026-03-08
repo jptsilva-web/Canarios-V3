@@ -41,6 +41,7 @@ const STAGE_COLORS = {
   incubating: { bg: 'bg-[#F97316]/20', border: 'border-[#F97316]', text: 'text-[#F97316]', color: '#F97316' }, // Orange - Incubação (ovos férteis)
   born: { bg: 'bg-[#22C55E]/20', border: 'border-[#22C55E]', text: 'text-[#22C55E]', color: '#22C55E' }, // Green - Nascidos
   banded: { bg: 'bg-[#FACC15]/20', border: 'border-[#FACC15]', text: 'text-[#FACC15]', color: '#FACC15' }, // Yellow - Anilhados
+  separator: { bg: 'bg-[#06B6D4]/20', border: 'border-[#06B6D4]', text: 'text-[#06B6D4]', color: '#06B6D4' }, // Cyan - Separador
   weaning: { bg: 'bg-[#A855F7]/20', border: 'border-[#A855F7]', text: 'text-[#A855F7]', color: '#A855F7' }, // Purple - Desmame
   completed: { bg: 'bg-[#64748B]/20', border: 'border-[#64748B]', text: 'text-[#64748B]', color: '#64748B' }, // Gray - Completo
 };
@@ -58,6 +59,7 @@ const CageCell = ({ cage, pair, cageStatus, onClick, t }) => {
       'incubating': t('pairs.clutchStatus.incubating'),
       'born': t('zones.born'),
       'banded': t('zones.banded'),
+      'separator': t('zones.separator') || 'Separador',
       'weaning': t('zones.weaning'),
     };
     return labels[s] || s;
@@ -88,7 +90,7 @@ const CageCell = ({ cage, pair, cageStatus, onClick, t }) => {
   );
 };
 
-const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageClick, t }) => {
+const ZoneCard = ({ zone, cages, pairs, clutches, breedingSettings, onDelete, onRefresh, onCageClick, t }) => {
   const [generating, setGenerating] = useState(false);
   
   const zoneCages = cages.filter(c => c.zone_id === zone.id);
@@ -112,7 +114,23 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     return pairs.find(p => p.cage_id === cageId);
   };
 
-  // Calculate cage status based on eggs in ACTIVE clutches only (not completed)
+  // Helper to calculate days between two dates
+  const daysBetween = (date1, date2) => {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+    const diffTime = d2 - d1;
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Calculate cage status based on clutch status and breeding cycle
+  // Logic:
+  // 1. laying (rosa) - postura iniciada, ovos frescos
+  // 2. incubating (laranja) - incubação iniciada
+  // 3. born (verde) - ovos nascidos (hatched) mas sem anilha
+  // 4. banded (amarelo) - ovos com anilha
+  // 5. separator (usar weaning temporariamente) - dias para separador atingidos
+  // 6. weaning (roxo) - dias para desmame atingidos
+  // 7. empty - postura terminada ou sem postura ativa
   const getCageStatus = (cageId) => {
     const pair = getCagePair(cageId);
     if (!pair) return null;
@@ -121,41 +139,72 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     const activeClutches = clutches.filter(c => c.pair_id === pair.id && c.status !== 'completed');
     if (activeClutches.length === 0) return null;
     
-    // Collect all eggs from active clutches only
-    const allEggs = activeClutches.flatMap(c => c.eggs || []);
-    if (allEggs.length === 0) return null;
+    // Get the most recent active clutch
+    const clutch = activeClutches[activeClutches.length - 1];
+    const allEggs = clutch.eggs || [];
     
-    // Count eggs by status
-    const hatchedAndBanded = allEggs.filter(e => e.status === 'hatched' && e.band_number);
-    const hatchedNotBanded = allEggs.filter(e => e.status === 'hatched' && !e.band_number);
-    const fertile = allEggs.filter(e => e.status === 'fertile');
-    const fresh = allEggs.filter(e => e.status === 'fresh');
-    
-    // Check if any clutch is in incubating status (user started incubation)
-    const hasIncubatingClutch = activeClutches.some(c => c.status === 'incubating');
-    
-    // Check if any clutch is in hatching status (eggs are hatching)
-    const hasHatchingClutch = activeClutches.some(c => c.status === 'hatching');
-    
-    // Determine status based on eggs:
-    // - If any eggs hatched and banded → 'banded'
-    // - If any eggs hatched but not banded OR clutch is hatching → 'born'
-    // - If fertile eggs exist OR clutch is incubating → 'incubating'
-    // - If only fresh eggs exist → 'laying'
-    if (hatchedAndBanded.length > 0) {
-      return 'banded';
-    }
-    if (hatchedNotBanded.length > 0 || hasHatchingClutch) {
-      return 'born';
-    }
-    if (fertile.length > 0 || hasIncubatingClutch) {
-      return 'incubating';
-    }
-    if (fresh.length > 0) {
+    if (allEggs.length === 0) {
+      // Clutch exists but no eggs yet - still laying phase
       return 'laying';
     }
     
-    return null;
+    // Count eggs by status
+    const hatchedEggs = allEggs.filter(e => e.status === 'hatched');
+    const hatchedAndBanded = hatchedEggs.filter(e => e.band_number);
+    const hatchedNotBanded = hatchedEggs.filter(e => !e.band_number);
+    
+    // Get breeding cycle settings
+    const daysSeparator = breedingSettings?.days_separator || 21;
+    const daysWeaning = breedingSettings?.days_weaning || 35;
+    
+    // If there are hatched eggs, check the timeline
+    if (hatchedEggs.length > 0) {
+      // Find the earliest hatch date
+      const hatchDates = hatchedEggs
+        .filter(e => e.hatched_date)
+        .map(e => new Date(e.hatched_date));
+      
+      if (hatchDates.length > 0) {
+        const earliestHatch = new Date(Math.min(...hatchDates));
+        const today = new Date();
+        const daysSinceHatch = daysBetween(earliestHatch, today);
+        
+        // Check weaning first (highest priority for time-based)
+        if (daysSinceHatch >= daysWeaning) {
+          return 'weaning';
+        }
+        
+        // Check separator days
+        if (daysSinceHatch >= daysSeparator) {
+          return 'separator';
+        }
+      }
+      
+      // If all hatched eggs are banded
+      if (hatchedAndBanded.length > 0 && hatchedNotBanded.length === 0) {
+        return 'banded';
+      }
+      
+      // If some eggs hatched but not banded
+      if (hatchedNotBanded.length > 0) {
+        return 'born';
+      }
+      
+      // All hatched eggs are banded
+      return 'banded';
+    }
+    
+    // Check clutch status for non-hatched states
+    if (clutch.status === 'hatching') {
+      return 'born';
+    }
+    
+    if (clutch.status === 'incubating') {
+      return 'incubating';
+    }
+    
+    // Default to laying if clutch exists with eggs
+    return 'laying';
   };
 
   // Count cages by status
@@ -164,6 +213,7 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     incubating: 0,
     born: 0,
     banded: 0,
+    separator: 0,
     weaning: 0,
   };
   
@@ -208,6 +258,11 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
             {statusCounts.banded > 0 && (
               <span className="text-xs px-2 py-0.5 rounded bg-[#FACC15]/20 text-[#FACC15]">
                 {statusCounts.banded} {t('zones.banded')}
+              </span>
+            )}
+            {statusCounts.separator > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-[#06B6D4]/20 text-[#06B6D4]">
+                {statusCounts.separator} {t('zones.separator') || 'Separador'}
               </span>
             )}
             {statusCounts.weaning > 0 && (
@@ -292,6 +347,7 @@ export const Zones = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
+  const [breedingSettings, setBreedingSettings] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -302,16 +358,18 @@ export const Zones = () => {
 
   const fetchData = async () => {
     try {
-      const [zonesRes, cagesRes, pairsRes, clutchesRes] = await Promise.all([
+      const [zonesRes, cagesRes, pairsRes, clutchesRes, settingsRes] = await Promise.all([
         zonesApi.getAll(),
         cagesApi.getAll(),
         pairsApi.getAll(),
         clutchesApi.getAll(),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings`).then(r => r.json()),
       ]);
       setZones(zonesRes.data);
       setCages(cagesRes.data);
       setPairs(pairsRes.data);
       setClutches(clutchesRes.data);
+      setBreedingSettings(settingsRes.breeding || {});
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error(t('messages.zoneLoadError'));
@@ -499,6 +557,10 @@ export const Zones = () => {
               <span className="text-[#FACC15]">{t('zones.banded')}</span>
             </div>
             <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#06B6D4]/20 border border-[#06B6D4]" />
+              <span className="text-[#06B6D4]">{t('zones.separator') || 'Separador'}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded bg-[#A855F7]/20 border border-[#A855F7]" />
               <span className="text-[#A855F7]">{t('zones.weaning')}</span>
             </div>
@@ -532,6 +594,7 @@ export const Zones = () => {
               cages={cages}
               pairs={pairs}
               clutches={clutches}
+              breedingSettings={breedingSettings}
               onDelete={setDeleteDialog}
               onRefresh={fetchData}
               onCageClick={handleCageClick}

@@ -264,6 +264,7 @@ export const translations = {
       weaning: 'Desmame',
       born: 'Nascidos',
       banded: 'Anilhados',
+      separator: 'Separador',
     },
     // Calendar
     calendar: {
@@ -726,6 +727,7 @@ export const translations = {
       weaning: 'Weaning',
       born: 'Born',
       banded: 'Banded',
+      separator: 'Separator',
     },
     // Calendar
     calendar: {
@@ -1188,6 +1190,7 @@ export const translations = {
       weaning: 'Destete',
       born: 'Nacidos',
       banded: 'Anillados',
+      separator: 'Separador',
     },
     // Calendar
     calendar: {
