@@ -33,15 +33,15 @@ import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
 
-// Stage colors
+// Stage colors - Distinct colors to avoid confusion
 const STAGE_COLORS = {
   empty: { bg: 'bg-[#151B2B]', border: 'border-[#2A3548]', text: 'text-slate-400', color: '#64748B' },
-  laying: { bg: 'bg-[#FFC300]/20', border: 'border-[#FFC300]', text: 'text-[#FFC300]', color: '#FFC300' },
-  incubating: { bg: 'bg-[#FF9800]/20', border: 'border-[#FF9800]', text: 'text-[#FF9800]', color: '#FF9800' },
-  hatching: { bg: 'bg-[#00BFA6]/20', border: 'border-[#00BFA6]', text: 'text-[#00BFA6]', color: '#00BFA6' },
-  weaning: { bg: 'bg-[#9C27B0]/20', border: 'border-[#9C27B0]', text: 'text-[#9C27B0]', color: '#9C27B0' },
-  completed: { bg: 'bg-[#64748B]/20', border: 'border-[#64748B]', text: 'text-[#64748B]', color: '#64748B' },
-  paired: { bg: 'bg-[#00BFA6]/20', border: 'border-[#00BFA6]', text: 'text-[#00BFA6]', color: '#00BFA6' },
+  paired: { bg: 'bg-[#3B82F6]/20', border: 'border-[#3B82F6]', text: 'text-[#3B82F6]', color: '#3B82F6' }, // Blue - Emparelhado
+  laying: { bg: 'bg-[#FACC15]/20', border: 'border-[#FACC15]', text: 'text-[#FACC15]', color: '#FACC15' }, // Yellow - Postura
+  incubating: { bg: 'bg-[#F97316]/20', border: 'border-[#F97316]', text: 'text-[#F97316]', color: '#F97316' }, // Orange - Incubação
+  hatching: { bg: 'bg-[#22C55E]/20', border: 'border-[#22C55E]', text: 'text-[#22C55E]', color: '#22C55E' }, // Green - Eclosão
+  weaning: { bg: 'bg-[#A855F7]/20', border: 'border-[#A855F7]', text: 'text-[#A855F7]', color: '#A855F7' }, // Purple - Desmame
+  completed: { bg: 'bg-[#64748B]/20', border: 'border-[#64748B]', text: 'text-[#64748B]', color: '#64748B' }, // Gray - Completo
 };
 
 const CageCell = ({ cage, pair, clutchStatus, onClick, t }) => {
@@ -148,27 +148,27 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
               {zone.rows}×{zone.columns} ({zoneCages.length} {t('zones.cages')})
             </span>
             {pairedCagesCount > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded bg-[#00BFA6]/20 text-[#00BFA6]">
+              <span className="text-xs px-2 py-0.5 rounded bg-[#3B82F6]/20 text-[#3B82F6]">
                 {pairedCagesCount} {t('zones.paired')}
               </span>
             )}
             {statusCounts.laying > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded bg-[#FFC300]/20 text-[#FFC300]">
+              <span className="text-xs px-2 py-0.5 rounded bg-[#FACC15]/20 text-[#FACC15]">
                 {statusCounts.laying} {t('pairs.clutchStatus.laying')}
               </span>
             )}
             {statusCounts.incubating > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded bg-[#FF9800]/20 text-[#FF9800]">
+              <span className="text-xs px-2 py-0.5 rounded bg-[#F97316]/20 text-[#F97316]">
                 {statusCounts.incubating} {t('pairs.clutchStatus.incubating')}
               </span>
             )}
             {statusCounts.hatching > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded bg-[#00BFA6]/20 text-[#00BFA6]">
+              <span className="text-xs px-2 py-0.5 rounded bg-[#22C55E]/20 text-[#22C55E]">
                 {statusCounts.hatching} {t('pairs.clutchStatus.hatching')}
               </span>
             )}
             {statusCounts.weaning > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded bg-[#9C27B0]/20 text-[#9C27B0]">
+              <span className="text-xs px-2 py-0.5 rounded bg-[#A855F7]/20 text-[#A855F7]">
                 {statusCounts.weaning} {t('zones.weaning')}
               </span>
             )}
@@ -426,6 +426,39 @@ export const Zones = () => {
         </Dialog>
       </div>
 
+      {/* Color Legend */}
+      <Card className="bg-[#202940] border-white/5">
+        <CardContent className="py-3">
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <span className="text-slate-400 font-medium">{t('zones.legend')}:</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#151B2B] border border-[#2A3548]" />
+              <span className="text-slate-400">{t('zones.empty')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#3B82F6]/20 border border-[#3B82F6]" />
+              <span className="text-[#3B82F6]">{t('zones.paired')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#FACC15]/20 border border-[#FACC15]" />
+              <span className="text-[#FACC15]">{t('pairs.clutchStatus.laying')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#F97316]/20 border border-[#F97316]" />
+              <span className="text-[#F97316]">{t('pairs.clutchStatus.incubating')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#22C55E]/20 border border-[#22C55E]" />
+              <span className="text-[#22C55E]">{t('pairs.clutchStatus.hatching')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#A855F7]/20 border border-[#A855F7]" />
+              <span className="text-[#A855F7]">{t('zones.weaning')}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Zones Grid */}
       {zones.length === 0 ? (
         <Card className="bg-[#202940] border-white/5">
@@ -511,8 +544,9 @@ export const Zones = () => {
               
               <Button
                 onClick={() => {
+                  const pairId = selectedCage?.pair?.id;
                   setSelectedCage(null);
-                  navigate('/pairs');
+                  navigate(`/pairs?pairId=${pairId}`);
                 }}
                 className="w-full bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
               >

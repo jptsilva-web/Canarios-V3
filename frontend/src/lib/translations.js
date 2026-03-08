@@ -49,6 +49,7 @@ export const translations = {
       create: 'Criar',
       view: 'Ver',
       required: 'obrigatório',
+      other: 'Outro',
     },
     // Messages (Toast notifications)
     messages: {
@@ -238,6 +239,7 @@ export const translations = {
       paired: 'emparelhada',
       noCages: 'Nenhuma gaiola gerada ainda',
       noPairAssigned: 'Nenhum casal atribuído a esta gaiola',
+      legend: 'Legenda',
       weaning: 'Desmame',
     },
     // Calendar
@@ -452,6 +454,7 @@ export const translations = {
       create: 'Create',
       view: 'View',
       required: 'required',
+      other: 'Other',
     },
     // Messages (Toast notifications)
     messages: {
@@ -641,6 +644,7 @@ export const translations = {
       paired: 'paired',
       noCages: 'No cages generated yet',
       noPairAssigned: 'No pair assigned to this cage',
+      legend: 'Legend',
       weaning: 'Weaning',
     },
     // Calendar
@@ -855,6 +859,7 @@ export const translations = {
       create: 'Crear',
       view: 'Ver',
       required: 'obligatorio',
+      other: 'Otro',
     },
     // Messages (Toast notifications)
     messages: {
@@ -1044,6 +1049,7 @@ export const translations = {
       paired: 'emparejada',
       noCages: 'Ninguna jaula generada aún',
       noPairAssigned: 'Ninguna pareja asignada a esta jaula',
+      legend: 'Leyenda',
       weaning: 'Destete',
     },
     // Calendar

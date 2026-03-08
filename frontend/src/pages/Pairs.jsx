@@ -462,9 +462,9 @@ const ClutchCard = ({ clutch, onUpdate, onDelete, onAddEgg, t }) => {
   );
 };
 
-const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
+const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighlighted }) => {
   const [clutches, setClutches] = useState([]);
-  const [showClutches, setShowClutches] = useState(false);
+  const [showClutches, setShowClutches] = useState(isHighlighted || false);
   const [loading, setLoading] = useState(true);
 
   const cage = cages.find(c => c.id === pair.cage_id);
@@ -526,20 +526,27 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
     
     switch (activeClutch.status) {
       case 'laying':
-        return 'bg-[#202940] border-l-4 border-l-[#FFC300] border-white/5';
+        return 'bg-[#202940] border-l-4 border-l-[#FACC15] border-white/5';
       case 'incubating':
-        return 'bg-[#202940] border-l-4 border-l-[#FF9800] border-white/5';
+        return 'bg-[#202940] border-l-4 border-l-[#F97316] border-white/5';
       case 'hatching':
-        return 'bg-[#202940] border-l-4 border-l-[#00BFA6] border-white/5';
+        return 'bg-[#202940] border-l-4 border-l-[#22C55E] border-white/5';
       case 'weaning':
-        return 'bg-[#202940] border-l-4 border-l-[#9C27B0] border-white/5';
+        return 'bg-[#202940] border-l-4 border-l-[#A855F7] border-white/5';
       default:
         return 'bg-[#202940] border-white/5';
     }
   };
 
   return (
-    <Card className={cn(getCardStyle(), 'hover:border-[#FFC300]/30 transition-all')}>
+    <Card 
+      className={cn(
+        getCardStyle(), 
+        'hover:border-[#FFC300]/30 transition-all',
+        isHighlighted && 'ring-2 ring-[#FFC300] ring-offset-2 ring-offset-[#1A2035]'
+      )}
+      data-pair-id={pair.id}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>
@@ -600,10 +607,10 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t }) => {
           <div className="flex items-center gap-2 text-sm">
             <span className={cn(
               'px-2 py-0.5 rounded text-xs font-medium uppercase',
-              activeClutch.status === 'laying' && 'bg-[#FFC300]/20 text-[#FFC300]',
-              activeClutch.status === 'incubating' && 'bg-[#FF9800]/20 text-[#FF9800]',
-              activeClutch.status === 'hatching' && 'bg-[#00BFA6]/20 text-[#00BFA6]',
-              activeClutch.status === 'weaning' && 'bg-[#9C27B0]/20 text-[#9C27B0]',
+              activeClutch.status === 'laying' && 'bg-[#FACC15]/20 text-[#FACC15]',
+              activeClutch.status === 'incubating' && 'bg-[#F97316]/20 text-[#F97316]',
+              activeClutch.status === 'hatching' && 'bg-[#22C55E]/20 text-[#22C55E]',
+              activeClutch.status === 'weaning' && 'bg-[#A855F7]/20 text-[#A855F7]',
             )}>
               {t(`pairs.clutchStatus.${activeClutch.status}`)}
             </span>
@@ -683,6 +690,7 @@ export const Pairs = () => {
     band_number: '',
     band_year: new Date().getFullYear(),
     gender: 'male',
+    species: 'Canário',
     stam: '',
     class_id: '',
   });
@@ -704,6 +712,26 @@ export const Pairs = () => {
       setDialogOpen(true);
       // Clear the URL parameter
       setSearchParams({});
+    }
+  }, [searchParams, loading, setSearchParams]);
+
+  // Check for pairId parameter from URL (coming from Zones page - view pair)
+  const [highlightedPairId, setHighlightedPairId] = useState(null);
+  
+  useEffect(() => {
+    const pairId = searchParams.get('pairId');
+    if (pairId && !loading) {
+      // Highlight the pair and scroll to it
+      setHighlightedPairId(pairId);
+      // Clear the URL parameter
+      setSearchParams({});
+      // Auto-scroll to the pair after a short delay
+      setTimeout(() => {
+        const pairElement = document.querySelector(`[data-pair-id="${pairId}"]`);
+        if (pairElement) {
+          pairElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
     }
   }, [searchParams, loading, setSearchParams]);
 
@@ -779,6 +807,7 @@ export const Pairs = () => {
       band_number: '',
       band_year: new Date().getFullYear(),
       gender: gender,
+      species: 'Canário',
       stam: '',
       class_id: '',
     });
@@ -992,6 +1021,7 @@ export const Pairs = () => {
               onDelete={setDeleteDialog}
               onRefresh={fetchData}
               t={t}
+              isHighlighted={highlightedPairId === pair.id}
             />
           ))}
         </div>
@@ -1051,6 +1081,25 @@ export const Pairs = () => {
                   className="bg-[#1A2035] border-white/10 text-white"
                 />
               </div>
+            </div>
+            <div>
+              <Label className="text-slate-300">{t('birds.species')}</Label>
+              <Select
+                value={newBirdData.species || 'Canário'}
+                onValueChange={(value) => setNewBirdData({ ...newBirdData, species: value })}
+              >
+                <SelectTrigger className="bg-[#1A2035] border-white/10 text-white">
+                  <SelectValue placeholder={t('birds.species')} />
+                </SelectTrigger>
+                <SelectContent className="bg-[#202940] border-white/10">
+                  <SelectItem value="Canário" className="text-white hover:bg-[#1A2035]">Canário</SelectItem>
+                  <SelectItem value="Pintassilgo" className="text-white hover:bg-[#1A2035]">Pintassilgo</SelectItem>
+                  <SelectItem value="Verdilhão" className="text-white hover:bg-[#1A2035]">Verdilhão</SelectItem>
+                  <SelectItem value="Lugre" className="text-white hover:bg-[#1A2035]">Lugre</SelectItem>
+                  <SelectItem value="Híbrido" className="text-white hover:bg-[#1A2035]">Híbrido</SelectItem>
+                  <SelectItem value="Outro" className="text-white hover:bg-[#1A2035]">{t('common.other')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
