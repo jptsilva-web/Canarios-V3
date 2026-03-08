@@ -524,13 +524,19 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
   const getCardStyle = () => {
     if (!activeClutch) return 'bg-[#202940] border-white/5';
     
+    // Check if there are hatched eggs
+    const hasHatchedEggs = activeClutch.eggs?.some(egg => egg.status === 'hatched');
+    
     switch (activeClutch.status) {
       case 'laying':
         return 'bg-[#202940] border-l-4 border-l-[#FACC15] border-white/5';
       case 'incubating':
         return 'bg-[#202940] border-l-4 border-l-[#F97316] border-white/5';
       case 'hatching':
-        return 'bg-[#202940] border-l-4 border-l-[#22C55E] border-white/5';
+        // If there are hatched eggs, show green (born), otherwise teal (hatching)
+        return hasHatchedEggs 
+          ? 'bg-[#202940] border-l-4 border-l-[#22C55E] border-white/5'
+          : 'bg-[#202940] border-l-4 border-l-[#14B8A6] border-white/5';
       case 'weaning':
         return 'bg-[#202940] border-l-4 border-l-[#A855F7] border-white/5';
       default:
@@ -605,15 +611,22 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
         {/* Status */}
         {activeClutch && (
           <div className="flex items-center gap-2 text-sm">
-            <span className={cn(
-              'px-2 py-0.5 rounded text-xs font-medium uppercase',
-              activeClutch.status === 'laying' && 'bg-[#FACC15]/20 text-[#FACC15]',
-              activeClutch.status === 'incubating' && 'bg-[#F97316]/20 text-[#F97316]',
-              activeClutch.status === 'hatching' && 'bg-[#22C55E]/20 text-[#22C55E]',
-              activeClutch.status === 'weaning' && 'bg-[#A855F7]/20 text-[#A855F7]',
-            )}>
-              {t(`pairs.clutchStatus.${activeClutch.status}`)}
-            </span>
+            {(() => {
+              const hasHatchedEggs = activeClutch.eggs?.some(egg => egg.status === 'hatched');
+              const statusKey = (activeClutch.status === 'hatching' && hasHatchedEggs) ? 'born' : activeClutch.status;
+              return (
+                <span className={cn(
+                  'px-2 py-0.5 rounded text-xs font-medium uppercase',
+                  activeClutch.status === 'laying' && 'bg-[#FACC15]/20 text-[#FACC15]',
+                  activeClutch.status === 'incubating' && 'bg-[#F97316]/20 text-[#F97316]',
+                  activeClutch.status === 'hatching' && !hasHatchedEggs && 'bg-[#14B8A6]/20 text-[#14B8A6]',
+                  activeClutch.status === 'hatching' && hasHatchedEggs && 'bg-[#22C55E]/20 text-[#22C55E]',
+                  activeClutch.status === 'weaning' && 'bg-[#A855F7]/20 text-[#A855F7]',
+                )}>
+                  {statusKey === 'born' ? t('zones.born') : t(`pairs.clutchStatus.${activeClutch.status}`)}
+                </span>
+              );
+            })()}
             <span className="text-slate-400">
               {activeClutch.eggs?.length || 0} {t('pairs.eggs').toLowerCase()}
             </span>

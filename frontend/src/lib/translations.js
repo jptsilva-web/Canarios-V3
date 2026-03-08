@@ -241,6 +241,7 @@ export const translations = {
       noPairAssigned: 'Nenhum casal atribuído a esta gaiola',
       legend: 'Legenda',
       weaning: 'Desmame',
+      born: 'Nascidos',
     },
     // Calendar
     calendar: {
@@ -269,7 +270,10 @@ export const translations = {
       today: 'Hoje',
       upcoming: 'Próximas',
       noTasks: 'Nenhuma tarefa',
+      noTasksDesc: 'As tarefas aparecerão aqui quando tiver posturas ativas. Comece por criar casais e adicionar posturas.',
       markComplete: 'Marcar como Concluída',
+      taskCompleted: 'Tarefa concluída',
+      urgent: 'Urgente',
     },
     // Newborn
     newborn: {
@@ -646,6 +650,7 @@ export const translations = {
       noPairAssigned: 'No pair assigned to this cage',
       legend: 'Legend',
       weaning: 'Weaning',
+      born: 'Born',
     },
     // Calendar
     calendar: {
@@ -674,7 +679,10 @@ export const translations = {
       today: 'Today',
       upcoming: 'Upcoming',
       noTasks: 'No tasks',
+      noTasksDesc: 'Tasks will appear here when you have active clutches. Start by creating pairs and adding clutches.',
       markComplete: 'Mark Complete',
+      taskCompleted: 'Task completed',
+      urgent: 'Urgent',
     },
     // Newborn
     newborn: {
@@ -1051,6 +1059,7 @@ export const translations = {
       noPairAssigned: 'Ninguna pareja asignada a esta jaula',
       legend: 'Leyenda',
       weaning: 'Destete',
+      born: 'Nacidos',
     },
     // Calendar
     calendar: {
@@ -1079,7 +1088,10 @@ export const translations = {
       today: 'Hoy',
       upcoming: 'Próximas',
       noTasks: 'Sin tareas',
+      noTasksDesc: 'Las tareas aparecerán aquí cuando tengas puestas activas. Empieza por crear parejas y añadir puestas.',
       markComplete: 'Marcar como Completada',
+      taskCompleted: 'Tarea completada',
+      urgent: 'Urgente',
     },
     // Newborn
     newborn: {

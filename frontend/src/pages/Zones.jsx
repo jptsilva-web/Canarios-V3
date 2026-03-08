@@ -39,14 +39,19 @@ const STAGE_COLORS = {
   paired: { bg: 'bg-[#3B82F6]/20', border: 'border-[#3B82F6]', text: 'text-[#3B82F6]', color: '#3B82F6' }, // Blue - Emparelhado
   laying: { bg: 'bg-[#FACC15]/20', border: 'border-[#FACC15]', text: 'text-[#FACC15]', color: '#FACC15' }, // Yellow - Postura
   incubating: { bg: 'bg-[#F97316]/20', border: 'border-[#F97316]', text: 'text-[#F97316]', color: '#F97316' }, // Orange - Incubação
-  hatching: { bg: 'bg-[#22C55E]/20', border: 'border-[#22C55E]', text: 'text-[#22C55E]', color: '#22C55E' }, // Green - Eclosão
+  hatching: { bg: 'bg-[#14B8A6]/20', border: 'border-[#14B8A6]', text: 'text-[#14B8A6]', color: '#14B8A6' }, // Teal - Eclosão (à espera de nascer)
+  born: { bg: 'bg-[#22C55E]/20', border: 'border-[#22C55E]', text: 'text-[#22C55E]', color: '#22C55E' }, // Green - Nascidos
   weaning: { bg: 'bg-[#A855F7]/20', border: 'border-[#A855F7]', text: 'text-[#A855F7]', color: '#A855F7' }, // Purple - Desmame
   completed: { bg: 'bg-[#64748B]/20', border: 'border-[#64748B]', text: 'text-[#64748B]', color: '#64748B' }, // Gray - Completo
 };
 
-const CageCell = ({ cage, pair, clutchStatus, onClick, t }) => {
+const CageCell = ({ cage, pair, clutchStatus, hasHatchedEggs, onClick, t }) => {
   const hasPair = !!pair;
-  const stage = clutchStatus || (hasPair ? 'paired' : 'empty');
+  // Determine stage - if hatching status but has hatched eggs, show 'born'
+  let stage = clutchStatus || (hasPair ? 'paired' : 'empty');
+  if (hasHatchedEggs && (clutchStatus === 'hatching' || clutchStatus === 'weaning')) {
+    stage = 'born';
+  }
   const colors = STAGE_COLORS[stage] || STAGE_COLORS.empty;
   
   const getStageLabel = (s) => {
@@ -56,6 +61,7 @@ const CageCell = ({ cage, pair, clutchStatus, onClick, t }) => {
       'laying': t('pairs.clutchStatus.laying'),
       'incubating': t('pairs.clutchStatus.incubating'),
       'hatching': t('pairs.clutchStatus.hatching'),
+      'born': t('zones.born'),
       'weaning': t('zones.weaning'),
     };
     return labels[s] || s;
@@ -121,6 +127,18 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     return activeClutch.status;
   };
 
+  const getCageHasHatchedEggs = (cageId) => {
+    const pair = getCagePair(cageId);
+    if (!pair) return false;
+    
+    // Find active clutch for this pair
+    const activeClutch = clutches.find(c => c.pair_id === pair.id && c.status !== 'completed');
+    if (!activeClutch) return false;
+    
+    // Check if any eggs are hatched
+    return activeClutch.eggs?.some(egg => egg.status === 'hatched') || false;
+  };
+
   // Count cages by status
   const statusCounts = {
     laying: 0,
@@ -163,7 +181,7 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
               </span>
             )}
             {statusCounts.hatching > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded bg-[#22C55E]/20 text-[#22C55E]">
+              <span className="text-xs px-2 py-0.5 rounded bg-[#14B8A6]/20 text-[#14B8A6]">
                 {statusCounts.hatching} {t('pairs.clutchStatus.hatching')}
               </span>
             )}
@@ -221,12 +239,14 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
               .map((cage) => {
                 const pair = getCagePair(cage.id);
                 const clutchStatus = getCageClutchStatus(cage.id);
+                const hasHatchedEggs = getCageHasHatchedEggs(cage.id);
                 return (
                   <CageCell 
                     key={cage.id} 
                     cage={cage} 
                     pair={pair}
                     clutchStatus={clutchStatus}
+                    hasHatchedEggs={hasHatchedEggs}
                     onClick={() => onCageClick(cage, pair)}
                     t={t}
                   />
@@ -448,8 +468,12 @@ export const Zones = () => {
               <span className="text-[#F97316]">{t('pairs.clutchStatus.incubating')}</span>
             </div>
             <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded bg-[#14B8A6]/20 border border-[#14B8A6]" />
+              <span className="text-[#14B8A6]">{t('pairs.clutchStatus.hatching')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded bg-[#22C55E]/20 border border-[#22C55E]" />
-              <span className="text-[#22C55E]">{t('pairs.clutchStatus.hatching')}</span>
+              <span className="text-[#22C55E]">{t('zones.born')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded bg-[#A855F7]/20 border border-[#A855F7]" />
