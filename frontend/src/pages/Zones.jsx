@@ -112,17 +112,17 @@ const ZoneCard = ({ zone, cages, pairs, clutches, onDelete, onRefresh, onCageCli
     return pairs.find(p => p.cage_id === cageId);
   };
 
-  // Calculate cage status based on eggs in ALL clutches (not just active ones)
+  // Calculate cage status based on eggs in ACTIVE clutches only (not completed)
   const getCageStatus = (cageId) => {
     const pair = getCagePair(cageId);
     if (!pair) return null;
     
-    // Get all clutches for this pair
-    const pairClutches = clutches.filter(c => c.pair_id === pair.id);
-    if (pairClutches.length === 0) return null;
+    // Get only active clutches (not completed) for this pair
+    const activeClutches = clutches.filter(c => c.pair_id === pair.id && c.status !== 'completed');
+    if (activeClutches.length === 0) return null;
     
-    // Collect all eggs from all clutches
-    const allEggs = pairClutches.flatMap(c => c.eggs || []);
+    // Collect all eggs from active clutches only
+    const allEggs = activeClutches.flatMap(c => c.eggs || []);
     if (allEggs.length === 0) return null;
     
     // Count eggs by status

@@ -617,10 +617,11 @@ const PairCard = ({ pair, cages, birds, onEdit, onDelete, onRefresh, t, isHighli
 
   const activeClutch = clutches.find(c => c.status !== 'completed');
   
-  // Calculate real status based on eggs (not just clutch status)
+  // Calculate real status based on eggs in ACTIVE clutches only
   const getEggBasedStatus = () => {
-    // Check all clutches, not just active ones
-    const allEggs = clutches.flatMap(c => c.eggs || []);
+    // Check only active clutches (not completed)
+    const activeClutches = clutches.filter(c => c.status !== 'completed');
+    const allEggs = activeClutches.flatMap(c => c.eggs || []);
     if (allEggs.length === 0) return null;
     
     const hatchedAndBanded = allEggs.filter(e => e.status === 'hatched' && e.band_number);
