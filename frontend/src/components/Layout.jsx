@@ -41,8 +41,9 @@ const getNavItems = (t) => [
   { path: '/seasons', icon: CalendarDays, label: t('seasons.title'), key: 'seasons' },
   { path: '/print-cards', icon: Printer, label: t('printCards.title'), key: 'print-cards' },
   { path: '/contacts', icon: Users, label: t('nav.contacts'), key: 'contacts' },
-  { path: '/settings', icon: Settings, label: t('nav.settings'), key: 'settings' },
 ];
+
+const getSettingsItem = (t) => ({ path: '/settings', icon: Settings, label: t('nav.settings'), key: 'settings' });
 
 export const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -51,6 +52,7 @@ export const Layout = ({ children }) => {
   const { language, changeLanguage, t } = useLanguage();
   
   const navItems = getNavItems(t);
+  const settingsItem = getSettingsItem(t);
   const currentLang = languages.find(l => l.code === language);
 
   return (
@@ -148,28 +150,49 @@ export const Layout = ({ children }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                data-testid={`nav-${item.key}`}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
-                  isActive 
-                    ? "bg-[#FFC300]/15 text-[#FFC300] border-r-2 border-[#FFC300]" 
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                )}
-              >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-                {isActive && <ChevronRight size={16} className="ml-auto" />}
-              </NavLink>
-            );
-          })}
+        <nav className="p-4 space-y-1 flex flex-col h-[calc(100vh-100px)]">
+          <div className="space-y-1 flex-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  data-testid={`nav-${item.key}`}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                    isActive 
+                      ? "bg-[#FFC300]/15 text-[#FFC300] border-r-2 border-[#FFC300]" 
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <item.icon size={20} />
+                  <span>{item.label}</span>
+                  {isActive && <ChevronRight size={16} className="ml-auto" />}
+                </NavLink>
+              );
+            })}
+          </div>
+          
+          {/* Settings at the bottom */}
+          <div className="pt-4 border-t border-white/5">
+            <NavLink
+              to={settingsItem.path}
+              data-testid={`nav-${settingsItem.key}`}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                location.pathname === settingsItem.path 
+                  ? "bg-[#FFC300]/15 text-[#FFC300] border-r-2 border-[#FFC300]" 
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              )}
+            >
+              <settingsItem.icon size={20} />
+              <span>{settingsItem.label}</span>
+              {location.pathname === settingsItem.path && <ChevronRight size={16} className="ml-auto" />}
+            </NavLink>
+          </div>
         </nav>
       </aside>
 

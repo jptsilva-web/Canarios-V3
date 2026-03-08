@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Save,
   RotateCcw,
   Mail,
   Send,
   Eye,
-  EyeOff
+  EyeOff,
+  Download,
+  Upload,
+  Database,
+  AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -14,6 +18,16 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -48,6 +62,11 @@ export const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchSettings();
@@ -144,6 +163,84 @@ export const Settings = () => {
     toast.info(t('messages.settingsReset'));
   };
 
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/backup/create`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const contentDisposition = response.headers.get('Content-Disposition');
+        const filename = contentDisposition 
+          ? contentDisposition.split('filename=')[1] 
+          : `ornituga_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        toast.success(t('settings.backupSuccess') || 'Backup criado com sucesso!');
+      } else {
+        toast.error(t('settings.backupError') || 'Erro ao criar backup');
+      }
+    } catch (error) {
+      console.error('Backup error:', error);
+      toast.error(t('settings.backupError') || 'Erro ao criar backup');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.name.endsWith('.json')) {
+        toast.error(t('settings.invalidFileType') || 'Por favor selecione um ficheiro JSON');
+        return;
+      }
+      setSelectedFile(file);
+      setShowRestoreConfirm(true);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!selectedFile) return;
+    
+    setRestoreLoading(true);
+    setShowRestoreConfirm(false);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      const response = await fetch(`${API_URL}/api/backup/restore`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(t('settings.restoreSuccess') || 'Dados restaurados com sucesso!');
+        // Refresh the page to load new data
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || t('settings.restoreError') || 'Erro ao restaurar dados');
+      }
+    } catch (error) {
+      console.error('Restore error:', error);
+      toast.error(t('settings.restoreError') || 'Erro ao restaurar dados');
+    } finally {
+      setRestoreLoading(false);
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -163,6 +260,109 @@ export const Settings = () => {
           {t('settings.subtitle')}
         </p>
       </div>
+
+      {/* Backup & Restore */}
+      <Card className="bg-[#202940] border-white/5">
+        <CardHeader>
+          <CardTitle className="text-lg text-white font-['Barlow_Condensed'] uppercase tracking-wider flex items-center gap-2">
+            <Database size={20} className="text-[#FFC300]" />
+            {t('settings.backupRestore') || 'Backup & Restauro'}
+          </CardTitle>
+          <p className="text-sm text-slate-400 mt-1">
+            {t('settings.backupRestoreDesc') || 'Crie uma cópia de segurança dos seus dados ou restaure a partir de um ficheiro anterior'}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Backup Section */}
+            <div className="p-4 rounded-lg bg-[#1A2035] border border-white/5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-[#22C55E]/20 flex items-center justify-center">
+                  <Download size={20} className="text-[#22C55E]" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium">{t('settings.createBackup') || 'Criar Backup'}</h3>
+                  <p className="text-xs text-slate-400">{t('settings.createBackupDesc') || 'Exportar todos os dados'}</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleBackup}
+                disabled={backupLoading}
+                className="w-full bg-[#22C55E] text-white hover:bg-[#22C55E]/90"
+                data-testid="backup-btn"
+              >
+                <Download size={16} className="mr-2" />
+                {backupLoading ? (t('common.loading') || 'A processar...') : (t('settings.downloadBackup') || 'Descarregar Backup')}
+              </Button>
+            </div>
+            
+            {/* Restore Section */}
+            <div className="p-4 rounded-lg bg-[#1A2035] border border-white/5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-[#FF9800]/20 flex items-center justify-center">
+                  <Upload size={20} className="text-[#FF9800]" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium">{t('settings.restoreBackup') || 'Restaurar Backup'}</h3>
+                  <p className="text-xs text-slate-400">{t('settings.restoreBackupDesc') || 'Importar de um ficheiro'}</p>
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleFileSelect}
+                className="hidden"
+                data-testid="restore-file-input"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={restoreLoading}
+                variant="outline"
+                className="w-full border-[#FF9800]/50 text-[#FF9800] hover:bg-[#FF9800]/10"
+                data-testid="restore-btn"
+              >
+                <Upload size={16} className="mr-2" />
+                {restoreLoading ? (t('common.loading') || 'A processar...') : (t('settings.selectFile') || 'Selecionar Ficheiro')}
+              </Button>
+            </div>
+          </div>
+          
+          {/* Warning */}
+          <div className="p-3 rounded-lg bg-[#E91E63]/10 border border-[#E91E63]/30 flex items-start gap-3">
+            <AlertTriangle size={18} className="text-[#E91E63] mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-slate-300">
+              {t('settings.restoreWarning') || 'Atenção: Restaurar um backup irá substituir TODOS os dados atuais. Esta ação não pode ser desfeita.'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
+        <AlertDialogContent className="bg-[#202940] border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <AlertTriangle className="text-[#FF9800]" size={20} />
+              {t('settings.confirmRestore') || 'Confirmar Restauro'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              {t('settings.confirmRestoreDesc') || 'Tem a certeza que pretende restaurar os dados? Esta ação irá substituir TODOS os dados atuais e não pode ser desfeita.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/5">
+              {t('common.cancel') || 'Cancelar'}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleRestore}
+              className="bg-[#E91E63] text-white hover:bg-[#E91E63]/90"
+            >
+              {t('settings.confirmRestoreBtn') || 'Sim, Restaurar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Email Notifications */}
       <Card className="bg-[#202940] border-white/5">

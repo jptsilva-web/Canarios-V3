@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, Query, BackgroundTasks, UploadFile, File
+from fastapi.responses import StreamingResponse, JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -13,6 +14,9 @@ from enum import Enum
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import json
+import tempfile
+import zipfile
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1330,6 +1334,84 @@ async def export_breeding_report_pdf():
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=breeding_report.pdf"}
     )
+
+# ============ BACKUP & RESTORE API ============
+@api_router.get("/backup/create")
+async def create_backup():
+    """Create a full database backup as JSON"""
+    try:
+        # Collections to backup
+        collections = ['birds', 'pairs', 'clutches', 'zones', 'cages', 'contacts', 'seasons', 'settings', 'manual_tasks']
+        
+        backup_data = {
+            "backup_date": datetime.now(timezone.utc).isoformat(),
+            "version": "1.0.0",
+            "collections": {}
+        }
+        
+        for collection_name in collections:
+            collection = db[collection_name]
+            docs = await collection.find({}, {"_id": 0}).to_list(100000)
+            backup_data["collections"][collection_name] = docs
+        
+        # Create JSON backup
+        json_content = json.dumps(backup_data, ensure_ascii=False, indent=2)
+        
+        # Create filename with date
+        filename = f"ornituga_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        return StreamingResponse(
+            iter([json_content]),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        logging.error(f"Backup failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}")
+
+@api_router.post("/backup/restore")
+async def restore_backup(file: UploadFile = File(...)):
+    """Restore database from a JSON backup file"""
+    try:
+        # Read and parse the backup file
+        content = await file.read()
+        backup_data = json.loads(content.decode('utf-8'))
+        
+        # Validate backup structure
+        if "collections" not in backup_data:
+            raise HTTPException(status_code=400, detail="Invalid backup file format")
+        
+        # Collections to restore
+        collections = ['birds', 'pairs', 'clutches', 'zones', 'cages', 'contacts', 'seasons', 'settings', 'manual_tasks']
+        
+        restored_counts = {}
+        
+        for collection_name in collections:
+            if collection_name in backup_data["collections"]:
+                collection = db[collection_name]
+                docs = backup_data["collections"][collection_name]
+                
+                if docs:
+                    # Clear existing data
+                    await collection.delete_many({})
+                    # Insert backup data
+                    await collection.insert_many(docs)
+                    restored_counts[collection_name] = len(docs)
+                else:
+                    # Clear collection if backup has empty array
+                    await collection.delete_many({})
+                    restored_counts[collection_name] = 0
+        
+        return {
+            "message": "Backup restored successfully",
+            "backup_date": backup_data.get("backup_date", "Unknown"),
+            "restored_counts": restored_counts
+        }
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
+    except Exception as e:
+        logging.error(f"Restore failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Restore failed: {str(e)}")
 
 # Root endpoint
 @api_router.get("/")

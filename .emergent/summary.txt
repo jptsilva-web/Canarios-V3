@@ -18,66 +18,96 @@ The user wants to create a Canary Breeding Management Application, similar to a 
 - **Season Management**: The ability to manage data by breeding season/year.
 - **Printable Breeding Cards**: Generate printable cards for each breeding pair.
 - **IIS Compatibility**: User wants to be able to deploy the application on a Windows server using IIS.
+- **Backup & Restore**: A feature to back up all application data to a file and restore it.
 
-**User's preferred language**: Portuguese (The user has been communicating primarily in Portuguese. The next agent MUST respond in Portuguese.)
+**User's preferred language**: Portuguese (The user has been communicating exclusively in Portuguese. The next agent MUST respond in Portuguese.)
 
 **what currently exists?**
-A comprehensive full-stack Canary Breeding Management application named OrniTuga built with FastAPI, React, and MongoDB. Key features include a dashboard, visual zone/cage management, bird registry, pair and clutch tracking, a genealogy tree, advanced reports with data export, and email notifications. The application is fully internationalized (EN, PT, ES) and supports multi-season data management. Recent work focused on implementing Season Management, Printable Breeding Cards, and a Year-over-Year comparison report, followed by an extensive effort to translate previously hardcoded UI elements and fix a series of user-reported UI/UX bugs.
+A comprehensive full-stack Canary Breeding Management application (OrniTuga) with a FastAPI backend, React frontend, and MongoDB database. It features a dashboard, visual zone/cage management, a bird registry, pair/clutch/egg tracking, a newborns page, a tasks page, and extensive internationalization (EN, PT, ES).
+
+The last session was an intense period of iterative UI/UX refinement based on rapid user feedback. Major changes were made to the core logic for displaying cage/pair status, moving from a simple clutch status to a more complex calculation based on the aggregate state of all eggs within a pair's clutches. Many pages (, , , ) were refactored to implement bug fixes, add translations, and improve workflows.
 
 **Last working item**:
-- **Last item agent was working**: The agent was addressing a series of UI/UX bugs and translation gaps reported by the user, primarily on the  and  pages. The key fixes were:
-    1.  **Cage Details Dialog**: Implemented a dialog on the  page that correctly displays data for the selected cage (either showing Empty with zeroed stats or the active pair's information), fixing a bug where clicking an empty cage showed data from another cage.
-    2.  **Add Pair Workflow**: Corrected the flow so that clicking + Add Pair in an empty cage's dialog navigates to the  page and automatically opens the Add Pair form with the correct cage pre-selected.
-    3.  **Pair Card UI**: Fixed the  component to load the correct clutch count on initial render and display a colored border and status badge (e.g., POSTURA) if there is an active (non-completed) clutch.
-    4.  **Species Dropdown**: Added the missing Species dropdown to the Create New Bird dialog that appears within the Add Pair flow.
-    5.  **Color Legend**: Added a color key/legend to the  page to explain the meaning of different cage colors (Empty, Paired, Laying, etc.).
-- **Status**: USER VERIFICATION PENDING
-- **Agent Testing Done**: Y (Visually confirmed fixes with screenshots)
-- **Which testing method agent to use?**: both. The recent, rapid changes across  and  warrant a thorough regression test. The testing agent should be used to verify all frontend functionality, especially the corrected workflows for adding pairs and the dynamic UI updates on the  and . Backend testing can verify that creating pairs/birds through these new flows works as expected.
+- **Last item agent was working**: The user requested two things:
+    1.  Move the Definições (Settings) menu item to the bottom of the sidebar.
+    2.  Implement a new feature within Definições to allow backing up and restoring all application data.
+    The agent acknowledged the request and was about to start implementation.
+- **Status**: NOT STARTED
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: both. The backend logic for backup (e.g., ) and restore () needs to be tested via bash commands. The frontend buttons can be verified with a screenshot. A full e2e test (backup, wipe DB, restore, verify data) is recommended.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Verify recent UI/UX fixes (P0)**
-  - **Description**: The user reported several bugs related to translations, incorrect data display, and confusing workflows on the  and  pages. While the agent has implemented fixes, they need explicit confirmation from the user.
-  - **Status**: USER VERIFICATION PENDING
-  - **Is recurring issue?**: Y (The  error has appeared multiple times, suggesting fragility in how translation props are passed to child components).
+- **Issue 1: Bug in Tasks Page (P0)**
+  - **Description**: The user reported that after completing a single task on the  page, all other tasks disappear from the list. This is a critical bug rendering the Tasks page unusable.
+  - **Status**: IN PROGRESS
+  - **Is recurring issue?**: N
+  - **Should Test frontend/backend/both after fix?**: Frontend
 
-- **Issue 2: Test data confusion (P1)**
-  - **Description**: The agent created a second, active clutch on Casal 2 to test and demonstrate the new status-based color indicators. This confused the user, who did not initiate this action. This test data persists in the database.
-  - **Next debug checklist**:
-    1.  Check the  collection in the database for multiple clutches associated with Casal 2.
-    2.  Confirm with the user if they want this test clutch removed.
-    3.  If confirmed, provide a way to delete it via the UI or remove it directly from the database.
-  - **Why fix this issue and what will be achieved with the fix?**: To remove confusing test data and restore the user's data to its correct state.
+- **Issue 2: Implement Backup/Restore Feature (P1)**
+  - **Description**: Implement functionality in the Settings page to allow the user to create a full database backup and restore from a backup file.
   - **Status**: NOT STARTED
+  - **Is recurring issue?**: N
+  - **Should Test frontend/backend/both after fix?**: Both
+
+**Issues Detail**:
+- **Issue 1: Bug in Tasks Page**
+    - **Attempted fixes**: The agent identified the likely source of the bug in  within the  function. The filter logic  was suspected to be faulty, likely due to an incorrect or  ID being used, causing the filter to remove all tasks. However, no fix was actually implemented.
+    - **Next debug checklist**:
+        1.  Go to .
+        2.  Inspect the  function.
+        3.  Add  to check the  being passed and the contents of the  array before the filter.
+        4.  Correct the filter logic to ensure it only removes the specific task that was completed. A common issue is comparing an object with a primitive, or an undefined id.
+    - **Why fix this issue and what will be achieved with the fix?**: This is a critical bug that makes task management impossible. Fixing it will restore core functionality.
+    - **Status**: IN PROGRESS
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Frontend. Create a few tasks, complete one, and verify that only that one is removed from the list.
+    - **Blocked on other issue**: None
+
+- **Issue 2: Implement Backup/Restore Feature**
+    - **Attempted fixes**: None.
+    - **Next debug checklist**:
+        1.  Create two new API endpoints in : one for backup (e.g., ) and one for restore (e.g., ).
+        2.  The backup endpoint should execute a shell command like  to create a database archive and return it as a file download.
+        3.  The restore endpoint should accept a file upload and use  to import the data.
+        4.  In , add two buttons: Backup Data and Restore Data.
+        5.  The Backup button should call the backup endpoint and trigger a file download.
+        6.  The Restore button should open a file selector and upload the selected file to the restore endpoint.
+    - **Why fix this issue and what will be achieved with the fix?**: This is a user-requested feature that provides data security and portability.
+    - **Status**: NOT STARTED
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both.
+    - **Blocked on other issue**: None
 
 **In progress Task List**:
-- No new tasks are in progress; the focus is on verifying the recent bug fixes.
+- **Task 1: Move Settings Menu Item (P1)**
+  - **Description**: The user requested moving the Definições (Settings) link to the bottom of the navigation sidebar.
+  - **Where to resume**: Edit  or the main layout component where the sidebar is defined. Reorder the navigation links.
+  - **What will be achieved with this?**: Fulfills a direct user UI preference.
+  - **Status**: NOT STARTED
+  - **Should Test frontend/backend/both after fix?**: Frontend (screenshot).
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-    - **Complete Minor Translations (P1)**: While a major translation pass was completed, some minor UI elements, dynamic messages, or newly added components may still contain hardcoded English text. A final review of the entire application is needed.
+  - **Complete Minor Translations (P1)**: While a major translation pass was completed, the user continues to find untranslated UI elements (e.g., in dynamically generated task text). A final review of the entire application is needed.
 - **Future Tasks**:
-    - **IIS Compatibility (P2)**: The agent has created documentation () and a  file. However, the compatibility has not been tested. This remains a backlog item to be addressed if the user prioritizes it.
+  - **IIS Compatibility (P2)**: The agent has created documentation () and a  file. However, the compatibility has not been tested. This remains a backlog item.
 
 **Completed work in this session**
-- **Core Features**: Implemented Season Management, Printable Breeding Cards, and a Year-over-Year Comparison report.
-- **Branding**: Renamed the application from Canary Control to OrniTuga across all relevant files (, , translation files).
-- **Internationalization (i18n)**:
-    - Conducted a massive translation pass, converting dozens of hardcoded strings to use the  framework on pages like , , , , etc.
-    - Fixed translation issues, such as changing a newborn's gender status from  to , and eclodido to nascido.
-- **Feature Enhancement**: Added the ability to create a new bird directly from the Add Pair dialog, streamlining the user workflow.
-- **Bug Fixes**:
-    - Resolved multiple critical UI bugs on the  page, including incorrect data display on empty cages and adding a color legend.
-    - Corrected the UI on the  page to show the correct clutch count and dynamic status indicators (colors/badges) on load.
-    - Fixed the workflow for adding a pair from an empty cage to be more intuitive.
-- **Documentation**: Created installation guides for deploying the application on a Windows server with IIS ( in English and Portuguese).
+- **Core Status Logic Overhaul**: Refactored the entire system for determining cage/pair status. The logic is no longer based on the simple  field but on a real-time calculation of the contents of a pair's clutches (presence of fresh, fertile, hatched, or banded eggs). This fixed numerous user-reported inconsistencies.
+- **New Statuses & Colors**: Added new cage statuses for Born (Nascidos) and Banded (Anilhados) and adjusted all status colors for better distinction based on user feedback.
+- **Egg Interaction Workflow**: Completely rewrote the logic for interacting with eggs. The popup menu is now context-aware (e.g., a fertile egg only shows options to mark as hatched/dead). It also now correctly prevents any changes on a clutch that is marked completed.
+- **Navigation & UI Fixes**:
+  - Fixed navigation from the  page to the  page, so clicking a cage's View Pair button now correctly navigates to and auto-expands the specific pair's details.
+  - Added frontend validation to the Add Pair form to require both a male and a female.
+- **Newborns Page Refactor**: Replaced the static Pair column with an editable Gender column, allowing the user to set the sex of newborns directly from the table.
+- **Widespread Internationalization (i18n)**: Translated dozens of previously hardcoded strings across the Dashboard, Tasks, and Newborns pages.
 
 **Earlier issues found/mentioned but not fixed**
-- None.
+- **Task Completion Bug**: The agent acknowledged this critical bug in  (Chat Messages 343-345) but was sidetracked by other user requests and never implemented the fix.
 
 **Known issue recurrence from previous fork**
-- None.
+- ** error**: The root cause (prop-drilling the translation function ) has not been addressed, only patched in specific components. This remains a potential source of future bugs.
 
 **Code Architecture**
 
@@ -85,7 +115,7 @@ A comprehensive full-stack Canary Breeding Management application named OrniTuga
 **Key Technical Concepts**
 - **Backend**: FastAPI, Pydantic, Motor (async MongoDB driver)
 - **Frontend**: React, , , TailwindCSS, Shadcn/UI, , 
-- **Internationalization (i18n)**:  and 
+- **Internationalization (i18n)**: , , and a custom  hook.
 - **Database**: MongoDB
 
 **key DB schema**
@@ -96,67 +126,62 @@ A comprehensive full-stack Canary Breeding Management application named OrniTuga
 - **eggs**: 
 
 **changes in tech stack**
-- No new technologies were added in this session.
+- No new technologies were added.
 
 **All files of reference**
-- : Heavily refactored to fix UI bugs, add the create bird feature, and improve translations.
-- : Heavily refactored to fix UI bugs, add the cage details dialog, and add the color legend.
-- : All three translation files (, , ) were significantly updated with new keys.
-- : Updated with translations for table headers and placeholders.
-- : New documentation file.
-- : New documentation file.
-- : New file to support IIS deployment.
-- : Title updated to OrniTuga.
-- : Title logic updated.
+- : Heavily modified to implement the new egg-based status calculation logic and color legend.
+- : Heavily modified to implement the new egg interaction workflow, status badges, auto-expansion, and pair creation validation.
+- : Refactored to replace the Pair column with an editable Gender column.
+- : Updated to use translation keys for all static text.
+- : Identified as containing a critical bug in .
+- : All three files were significantly expanded with new keys for the Dashboard, Newborns page, and various UI elements.
 
 **Areas that need refactoring**:
-- ****: This file remains monolithic and could be broken down into a more modular structure (e.g., routers, models, services).
-- **Prop Drilling for Translations**: The translation function  is being passed down through multiple component layers (e.g.,  ->  -> ). This prop drilling makes components less reusable and harder to maintain. Components that need translations should ideally call the  hook themselves.
+- ****: This file is monolithic and should be broken down into a modular structure (e.g., routers, models, services).
+- ****: The  function is buggy and needs to be fixed immediately.
+- **Prop Drilling for Translations**: The  function is still being passed down through props in some places. Components should use the  hook directly to improve maintainability.
 
 **key api endpoints**
-- No new API endpoints were created. Existing endpoints were utilized by the new and updated frontend components.
+- ****: Used by the Newborns page to update a bird's gender.
 
 **Critical Info for New Agent**
 - **MUST Speak Portuguese**: All communication with the user must be in Portuguese.
-- **User is Very Engaged**: The user provides frequent, detailed feedback, often with screenshots. Be prepared for rapid iterations on UI/UX details and translations.
-- **Check for **: This error has occurred multiple times. It's caused by a component attempting to use the  translation function without having access to it (either via props or the  hook). Be mindful of this when modifying components.
-- **Test Data**: The previous agent created an extra clutch for Casal 2 to demonstrate a feature, which confused the user. Be cautious about adding/modifying user data for testing. Clarify the status of this extra clutch with the user.
+- **User is Highly Engaged**: The user provides frequent, detailed feedback. Expect rapid, iterative cycles on UI/UX details.
+- **Core Status Logic is Critical**: The most important concept to grasp is that cage/pair status colors and badges are derived from the *aggregate state of all eggs* across a pair's clutches, ignoring clutches marked as 'completed'. Any changes to  or  must respect this complex logic.
+- **Fix the Tasks Page First**: The bug where completing one task removes all tasks is a high-priority blocker for the user. This should be addressed before starting the new backup/restore feature.
 
 **documents and test reports created in this job**
 -  (updated)
-- 
--  (new)
--  (new)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **Request**: Clicked on an empty cage and it showed data from an occupied cage. The create-pair flow from there was also incorrect. (FIXED, PENDING VERIFICATION)
-2.  **Report**: The PairCard UI doesn't update clutch count automatically, and the colors/status for active clutches are missing. (FIXED, PENDING VERIFICATION)
-3.  **Confusion**: Why did a second clutch appear for Casal 2? (Agent created it for testing).
-4.  **Request**: Add a color legend to the  page. (COMPLETED)
-5.  **Request**: The species dropdown is missing from the Create New Bird dialog. (COMPLETED)
-6.  **Request**: In the create-pair flow from an empty cage, the form should be empty with the cage pre-selected. (FIXED, PENDING VERIFICATION)
-7.  **Request**: Rename the app to OrniTuga. (COMPLETED)
-8.  **Report**: Newborn gender shows as ? newborn instead of something like Indefinido. (COMPLETED)
-9.  **Request**: How can I test the app on my own PC? (ANSWERED)
-10. **Request**: Add an option to create a new bird directly from the Add Pair form. (COMPLETED)
+1.  **Request:** Move the Settings menu to the bottom of the sidebar and add a Backup/Restore feature. (PENDING)
+2.  **Report:** On the  page, a cage for a pair with a completed clutch was still showing the incubation color. (FIXED)
+3.  **Request:** On the  page, replace the Pair column with an editable Gender column. (COMPLETED)
+4.  **Report:** On the , several titles (Upcoming Tasks, Quick Stats, Status Legend) were not translated. (COMPLETED)
+5.  **Report:** Inside the 's Upcoming Tasks panel, the task type (laying) and relative date (Today) were in English. (COMPLETED)
+6.  **Report:** When a task is completed, all other tasks disappear from the list. (ACKNOWLEDGED, NOT FIXED)
+7.  **Report:** The laying and days to separate statuses disappeared from the color legend. (FIXED, laying was re-added)
+8.  **Request:** The logic for interacting with eggs is confusing. An egg that is already fertile shouldn't show the fertile/infertile option again. When a clutch is completed, nothing should be editable. (COMPLETED)
+9.  **Request:** The order in the egg popup menu is wrong; Born should come before entering the Ring Number. (COMPLETED)
+10. **Report:** The form for creating a pair allows creating one with only a male or only a female. It should require both. (COMPLETED)
 
 **Project Health Check:**
-- **Broken**: No core features are broken. However, there have been significant, rapid changes to the UI on the  and  pages that are awaiting user verification.
+- **Broken**: The  page is functionally broken due to the bug where completing one task clears the entire list.
 - **Mocked**: None.
 
 **3rd Party Integrations**
 - **Gmail**: For email notifications via the  Python library.
-- **i18next / react-i18next**: For application-wide internationalization (translations).
+- **i18next / react-i18next**: For application-wide internationalization.
 
 **Testing status**
-- **Testing agent used after significant changes**: YES (for the initial feature delivery of Seasons/Cards).
+- **Testing agent used after significant changes**: NO
 - **Troubleshoot agent used after agent stuck in loop**: NO
 - **Test files created**: None.
-- **Known regressions**: None identified, but the recent UI refactoring warrants a full frontend regression test.
+- **Known regressions**: The  page functionality is a regression.
 
 **Credentials to test flow:**
 - **Email**: 
 - **Gmail App Password**: 
 
 **What agent forgot to execute**
-- The agent created test data (a new clutch) that was visible to the user, causing confusion. While not a forgotten execution step, it's a process issue. The agent should have used temporary, non-persistent data or clearly communicated the test and its cleanup.</analysis>
+- The agent correctly identified the critical bug on the  page but got sidetracked by subsequent user requests for UI changes and never implemented the fix. This is the highest priority item for the next agent to address.</analysis>

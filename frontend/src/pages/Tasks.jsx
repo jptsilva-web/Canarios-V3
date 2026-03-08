@@ -120,16 +120,13 @@ export const Tasks = () => {
 
   const handleCompleteTask = async (task) => {
     try {
+      // Store the task ID to filter
+      const taskIdToRemove = task.id;
+      
       // Remove only this specific task from the list
-      // Using a more robust comparison
       setTasks(prevTasks => {
-        const newTasks = prevTasks.filter(t => {
-          // Compare by unique identifiers
-          if (task.id && t.id) return t.id !== task.id;
-          // Fallback: compare by pair_id + type + due_date
-          return !(t.pair_id === task.pair_id && t.type === task.type && t.due_date === task.due_date);
-        });
-        return newTasks;
+        // Filter using the stored ID with strict equality
+        return prevTasks.filter(t => t.id !== taskIdToRemove);
       });
       toast.success(t('tasks.taskCompleted'));
     } catch (error) {
