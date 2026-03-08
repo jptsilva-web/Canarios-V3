@@ -57,7 +57,8 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
   const [bandNumber, setBandNumber] = useState(egg.band_number || '');
   const [updating, setUpdating] = useState(false);
 
-  const canChangeStatus = clutchStatus === 'laying' || clutchStatus === 'incubating' || clutchStatus === 'hatching' || clutchStatus === 'completed';
+  // Completed clutches cannot be modified at all
+  const isClutchCompleted = clutchStatus === 'completed';
   
   const handleStatusChange = async (newStatus) => {
     setUpdating(true);
@@ -106,14 +107,31 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
     }
   };
 
-  // Render hatched egg as a bird icon with band number displayed
+  // DEAD egg/chick - no interaction allowed
+  if (egg.status === 'dead') {
+    return (
+      <div
+        className="w-8 h-10 rounded-full flex items-center justify-center bg-slate-700 text-slate-400 opacity-50"
+        style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
+        title={`${t('pairs.eggs')} ${index + 1}: ${t('pairs.eggStatus.dead')}`}
+      >
+        <X size={14} />
+      </div>
+    );
+  }
+
+  // HATCHED egg (chick) - can band if not banded, can mark as dead (until completed)
   if (egg.status === 'hatched') {
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={isClutchCompleted ? () => {} : setOpen}>
         <PopoverTrigger asChild>
           <button
-            className="flex flex-col items-center gap-0.5 group"
-            title={`Chick ${index + 1}: ${egg.band_number || 'Not banded'}`}
+            className={cn(
+              "flex flex-col items-center gap-0.5 group",
+              isClutchCompleted && "cursor-default"
+            )}
+            title={`${t('pairs.chick')} ${index + 1}: ${egg.band_number || t('pairs.noRing')}`}
+            disabled={isClutchCompleted}
           >
             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#00BFA6] text-white group-hover:bg-[#00BFA6]/80 transition-colors relative">
               <Bird size={20} />
@@ -123,92 +141,183 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
                 {egg.band_number}
               </span>
             ) : (
-              <span className="text-[8px] text-slate-500 italic">no ring</span>
+              <span className="text-[8px] text-slate-500 italic">{t('pairs.noRing')}</span>
             )}
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 bg-[#202940] border-white/10 p-3">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-white font-medium">Chick {index + 1}</span>
-              <span className="text-xs bg-[#00BFA6]/20 text-[#00BFA6] px-2 py-0.5 rounded">Hatched</span>
+        {!isClutchCompleted && (
+          <PopoverContent className="w-64 bg-[#202940] border-white/10 p-3">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-white font-medium">{t('pairs.chick')} {index + 1}</span>
+                <span className="text-xs bg-[#00BFA6]/20 text-[#00BFA6] px-2 py-0.5 rounded">{t('pairs.eggStatus.hatched')}</span>
+              </div>
+              
+              {egg.band_number ? (
+                <div className="p-2 bg-[#1A2035] rounded">
+                  <p className="text-xs text-slate-400">{t('pairs.ringNumber')}</p>
+                  <p className="text-[#FFC300] font-mono font-bold">{egg.band_number}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-slate-300 text-xs">{t('pairs.ringNumber')}</Label>
+                  <Input
+                    value={bandNumber}
+                    onChange={(e) => setBandNumber(e.target.value)}
+                    placeholder="e.g., PT2025-001"
+                    className="bg-[#1A2035] border-white/10 text-white text-sm h-8"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleBand}
+                    disabled={updating}
+                    className="w-full bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
+                  >
+                    {t('pairs.bandChick')}
+                  </Button>
+                </div>
+              )}
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleStatusChange('dead')}
+                disabled={updating}
+                className="w-full border-[#E91E63]/50 text-[#E91E63] hover:bg-[#E91E63]/10"
+              >
+                {t('pairs.markAsDead')}
+              </Button>
             </div>
-            
-            {egg.band_number ? (
-              <div className="p-2 bg-[#1A2035] rounded">
-                <p className="text-xs text-slate-400">Ring Number</p>
-                <p className="text-[#FFC300] font-mono font-bold">{egg.band_number}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label className="text-slate-300 text-xs">Add Ring Number</Label>
-                <Input
-                  value={bandNumber}
-                  onChange={(e) => setBandNumber(e.target.value)}
-                  placeholder="e.g., PT2025-001"
-                  className="bg-[#1A2035] border-white/10 text-white text-sm h-8"
-                />
-                <Button
-                  size="sm"
-                  onClick={handleBand}
-                  disabled={updating}
-                  className="w-full bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90"
-                >
-                  Band Chick
-                </Button>
-              </div>
-            )}
-            
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleStatusChange('dead')}
-              disabled={updating}
-              className="w-full border-[#E91E63]/50 text-[#E91E63] hover:bg-[#E91E63]/10"
-            >
-              Mark as Dead
-            </Button>
-          </div>
-        </PopoverContent>
+          </PopoverContent>
+        )}
       </Popover>
     );
   }
 
-  // Render dead egg/chick
-  if (egg.status === 'dead') {
+  // INFERTILE egg - can only mark as dead (until completed)
+  if (egg.status === 'infertile') {
     return (
-      <div
-        className="w-8 h-10 rounded-full flex items-center justify-center bg-slate-700 text-slate-400 opacity-50"
-        style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
-        title={`Egg ${index + 1}: Dead`}
-      >
-        <X size={14} />
-      </div>
+      <Popover open={open} onOpenChange={isClutchCompleted ? () => {} : setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className={cn(
+              'w-8 h-10 flex items-center justify-center text-xs font-bold transition-all bg-[#E91E63] text-white',
+              !isClutchCompleted && 'hover:scale-110'
+            )}
+            style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
+            title={`${t('pairs.eggs')} ${index + 1}: ${t('pairs.eggStatus.infertile')}`}
+            disabled={isClutchCompleted}
+          >
+            {index + 1}
+          </button>
+        </PopoverTrigger>
+        {!isClutchCompleted && (
+          <PopoverContent className="w-56 bg-[#202940] border-white/10 p-2">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-xs text-slate-400">{t('pairs.eggs')} {index + 1}</span>
+                <span className="text-xs bg-[#E91E63]/20 text-[#E91E63] px-2 py-0.5 rounded">{t('pairs.eggStatus.infertile')}</span>
+              </div>
+              
+              <hr className="border-white/10 my-1" />
+              
+              <button
+                onClick={() => handleStatusChange('dead')}
+                disabled={updating}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-slate-700/50 transition-colors"
+              >
+                <X size={16} className="text-slate-400" />
+                <span className="text-sm text-slate-400">{t('pairs.markAsDead')}</span>
+              </button>
+            </div>
+          </PopoverContent>
+        )}
+      </Popover>
     );
   }
 
-  // Render egg (fresh, fertile, infertile)
+  // FERTILE egg - can mark as hatched (with band) or dead (until completed)
+  if (egg.status === 'fertile') {
+    return (
+      <Popover open={open} onOpenChange={isClutchCompleted ? () => {} : setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className={cn(
+              'w-8 h-10 flex items-center justify-center text-xs font-bold transition-all bg-[#00BFA6] text-white',
+              !isClutchCompleted && 'hover:scale-110'
+            )}
+            style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
+            title={`${t('pairs.eggs')} ${index + 1}: ${t('pairs.eggStatus.fertile')}`}
+            disabled={isClutchCompleted}
+          >
+            {index + 1}
+          </button>
+        </PopoverTrigger>
+        {!isClutchCompleted && (
+          <PopoverContent className="w-56 bg-[#202940] border-white/10 p-2">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-xs text-slate-400">{t('pairs.eggs')} {index + 1}</span>
+                <span className="text-xs bg-[#00BFA6]/20 text-[#00BFA6] px-2 py-0.5 rounded">{t('pairs.eggStatus.fertile')}</span>
+              </div>
+              
+              <hr className="border-white/10 my-1" />
+              <p className="text-xs text-slate-500 px-2">{t('pairs.markAsHatched')}</p>
+              <div className="px-2 py-1">
+                <Label className="text-slate-300 text-xs">{t('pairs.ringNumber')}</Label>
+                <Input
+                  value={bandNumber}
+                  onChange={(e) => setBandNumber(e.target.value)}
+                  placeholder="e.g., PT2025-001"
+                  className="bg-[#1A2035] border-white/10 text-white text-sm h-8 mt-1"
+                />
+              </div>
+              <button
+                onClick={() => handleStatusChange('hatched')}
+                disabled={updating}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#00BFA6]/20 transition-colors"
+              >
+                <Bird size={16} className="text-[#00BFA6]" />
+                <span className="text-sm text-white">{t('pairs.eggStatus.hatched')}</span>
+              </button>
+              
+              <hr className="border-white/10 my-1" />
+              
+              <button
+                onClick={() => handleStatusChange('dead')}
+                disabled={updating}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-slate-700/50 transition-colors"
+              >
+                <X size={16} className="text-slate-400" />
+                <span className="text-sm text-slate-400">{t('pairs.markAsDead')}</span>
+              </button>
+            </div>
+          </PopoverContent>
+        )}
+      </Popover>
+    );
+  }
+
+  // FRESH egg - can mark as fertile, infertile, or dead (until completed)
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={isClutchCompleted ? () => {} : setOpen}>
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'w-8 h-10 flex items-center justify-center text-xs font-bold transition-all hover:scale-110',
-            egg.status === 'fresh' && 'bg-white text-slate-700',
-            egg.status === 'fertile' && 'bg-[#00BFA6] text-white',
-            egg.status === 'infertile' && 'bg-[#E91E63] text-white',
+            'w-8 h-10 flex items-center justify-center text-xs font-bold transition-all bg-white text-slate-700',
+            !isClutchCompleted && 'hover:scale-110'
           )}
           style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
-          title={`Egg ${index + 1}: ${egg.status} - Click to change`}
-          disabled={!canChangeStatus}
+          title={`${t('pairs.eggs')} ${index + 1}: ${t('pairs.eggStatus.fresh')} - ${t('pairs.clickToChange')}`}
+          disabled={isClutchCompleted}
         >
           {index + 1}
         </button>
       </PopoverTrigger>
-      {canChangeStatus && (
+      {!isClutchCompleted && (
         <PopoverContent className="w-56 bg-[#202940] border-white/10 p-2">
           <div className="space-y-1">
-            <p className="text-xs text-slate-400 px-2 py-1">{t('pairs.eggs')} {index + 1}</p>
+            <p className="text-xs text-slate-400 px-2 py-1">{t('pairs.eggs')} {index + 1} - {t('pairs.eggStatus.fresh')}</p>
             
             <button
               onClick={() => handleStatusChange('fertile')}
@@ -228,31 +337,6 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
               <span className="text-sm text-white">{t('pairs.eggStatus.infertile')}</span>
             </button>
             
-            {/* Show hatch option when egg is fertile or fresh */}
-            {(egg.status === 'fertile' || egg.status === 'fresh') && (
-              <>
-                <hr className="border-white/10 my-1" />
-                <p className="text-xs text-slate-500 px-2">{t('pairs.markAsHatched')}</p>
-                <div className="px-2 py-1">
-                  <Label className="text-slate-300 text-xs">{t('pairs.ringNumber')}</Label>
-                  <Input
-                    value={bandNumber}
-                    onChange={(e) => setBandNumber(e.target.value)}
-                    placeholder="e.g., PT2025-001"
-                    className="bg-[#1A2035] border-white/10 text-white text-sm h-8 mt-1"
-                  />
-                </div>
-                <button
-                  onClick={() => handleStatusChange('hatched')}
-                  disabled={updating}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-[#00BFA6]/20 transition-colors"
-                >
-                  <Bird size={16} className="text-[#00BFA6]" />
-                  <span className="text-sm text-white">{t('pairs.eggStatus.hatched')}</span>
-                </button>
-              </>
-            )}
-            
             <hr className="border-white/10 my-1" />
             
             <button
@@ -261,7 +345,7 @@ const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
               className="w-full flex items-center gap-2 px-3 py-2 rounded text-left hover:bg-slate-700/50 transition-colors"
             >
               <X size={16} className="text-slate-400" />
-              <span className="text-sm text-slate-400">{t('pairs.eggStatus.dead')}</span>
+              <span className="text-sm text-slate-400">{t('pairs.markAsDead')}</span>
             </button>
           </div>
         </PopoverContent>
