@@ -106,6 +106,10 @@ Build a canary breeding control/management web application with a local database
 - `/api/export/breeding-report/csv` - Export breeding report to CSV
 - `/api/export/breeding-report/pdf` - Export breeding report to PDF
 
+### Backup/Restore APIs
+- `GET /api/backup/create` - Download full database backup as JSON file
+- `POST /api/backup/restore` - Upload and restore from JSON backup file
+
 ### Settings APIs
 - `/api/settings` - Get all settings (breeding & email)
 - `/api/settings/breeding` - Save breeding cycle configuration
@@ -139,7 +143,7 @@ Build a canary breeding control/management web application with a local database
 ### P2 (Medium Priority)
 - [ ] Multiple user support with authentication
 - [ ] Mobile app version
-- [ ] Data backup/restore functionality
+- [x] Data backup/restore functionality ✅ IMPLEMENTED
 
 ## Documentation Files
 - `/app/docs/IIS_INSTALLATION_GUIDE.md` - Complete IIS deployment guide with Reverse Proxy configuration
@@ -237,3 +241,12 @@ Build a canary breeding control/management web application with a local database
 - `/app/test_reports/iteration_1.json`
 - `/app/test_reports/iteration_2.json`
 - `/app/test_reports/iteration_4.json` - Season Management, Print Cards, Year Comparison tests (100% passed)
+- `/app/test_reports/iteration_5.json` - Tasks bug fix, Settings menu position, Backup/Restore (100% passed)
+
+## Recent Changes (March 2025)
+- ✅ Fixed Tasks page bug - completing one task no longer removes all tasks
+- ✅ Moved Settings menu to bottom of sidebar with visual separator
+- ✅ Implemented Backup & Restore functionality in Settings page
+  - Download full database backup as JSON
+  - Restore from JSON backup file with confirmation dialog
+  - Warning message about data replacement
