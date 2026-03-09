@@ -233,6 +233,7 @@ export const Birds = () => {
   const [editingBird, setEditingBird] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
+  const [editingGender, setEditingGender] = useState(null); // Track which bird's gender is being edited inline
 
   // Default year is previous year
   const defaultYear = new Date().getFullYear() - 1;
@@ -354,6 +355,21 @@ export const Birds = () => {
       fetchSavedStams();
     } catch (error) {
       toast.error(t('messages.birdDeleteError'));
+    }
+  };
+
+  // Handle inline gender change for newborns (unknown gender)
+  const handleInlineGenderChange = async (bird, newGender) => {
+    try {
+      await birdsApi.update(bird.id, { gender: newGender });
+      setBirds(prev => prev.map(b => 
+        b.id === bird.id ? { ...b, gender: newGender } : b
+      ));
+      toast.success(t('messages.sexUpdated'));
+      setEditingGender(null);
+    } catch (error) {
+      console.error('Error updating gender:', error);
+      toast.error(t('messages.error'));
     }
   };
 
@@ -636,20 +652,49 @@ export const Birds = () => {
                   >
                     <TableCell className="font-mono text-white">{bird.band_number}</TableCell>
                     <TableCell>
-                      <span className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                        bird.gender === 'male' 
-                          ? 'bg-[#00BFA6]/20 text-[#00BFA6]' 
-                          : bird.gender === 'female'
-                          ? 'bg-[#FF69B4]/20 text-[#FF69B4]'
-                          : 'bg-[#FFC300]/20 text-[#FFC300]'
-                      )}>
-                        {bird.gender === 'male' 
-                          ? t('common.male') 
-                          : bird.gender === 'female' 
-                          ? t('common.female') 
-                          : t('common.unknown')}
-                      </span>
+                      {bird.gender === 'unknown' ? (
+                        // Newborn bird - allow inline gender editing
+                        editingGender === bird.id ? (
+                          <Select
+                            value={bird.gender}
+                            onValueChange={(value) => handleInlineGenderChange(bird, value)}
+                          >
+                            <SelectTrigger className="w-28 h-8 bg-[#1A2035] border-white/10 text-white text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#202940] border-white/10">
+                              <SelectItem value="unknown" className="text-white hover:bg-[#1A2035]">
+                                {t('common.unknown')}
+                              </SelectItem>
+                              <SelectItem value="male" className="text-white hover:bg-[#1A2035]">
+                                {t('common.male')}
+                              </SelectItem>
+                              <SelectItem value="female" className="text-white hover:bg-[#1A2035]">
+                                {t('common.female')}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <button
+                            onClick={() => setEditingGender(bird.id)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-[#FFC300]/20 text-[#FFC300] hover:bg-[#FFC300]/30 transition-colors"
+                            title={t('newborns.clickToChangeSex') || 'Clique para alterar'}
+                          >
+                            {t('common.unknown')}
+                            <Edit size={10} />
+                          </button>
+                        )
+                      ) : (
+                        // Adult bird - display only (no editing)
+                        <span className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                          bird.gender === 'male' 
+                            ? 'bg-[#00BFA6]/20 text-[#00BFA6]' 
+                            : 'bg-[#FF69B4]/20 text-[#FF69B4]'
+                        )}>
+                          {bird.gender === 'male' ? t('common.male') : t('common.female')}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-[#FFC300] font-mono">{bird.stam || bird.color || '-'}</TableCell>
                     <TableCell className="text-slate-300 max-w-[200px] truncate" title={getClassName(bird.class_id)}>

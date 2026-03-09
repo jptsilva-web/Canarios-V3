@@ -270,7 +270,7 @@ export const Newborn = () => {
                             </SelectTrigger>
                             <SelectContent className="bg-[#202940] border-white/10">
                               <SelectItem value="unknown" className="text-white hover:bg-[#1A2035]">
-                                {t('birds.genderOptions.unknown')}
+                                {t('common.unknown')}
                               </SelectItem>
                               <SelectItem value="male" className="text-white hover:bg-[#1A2035]">
                                 {t('common.male')}
