@@ -557,6 +557,27 @@ async def update_bird(bird_id: str, input: BirdCreate):
     updated_bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
     return updated_bird
 
+class BirdPartialUpdate(BaseModel):
+    gender: Optional[str] = None
+    stam: Optional[str] = None
+    class_id: Optional[str] = None
+    notes: Optional[str] = None
+
+@api_router.patch("/birds/{bird_id}", response_model=Bird)
+async def partial_update_bird(bird_id: str, input: BirdPartialUpdate):
+    bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
+    if not bird:
+        raise HTTPException(status_code=404, detail="Bird not found")
+    
+    # Only update fields that were provided
+    update_data = {k: v for k, v in input.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.birds.update_one({"id": bird_id}, {"$set": update_data})
+    
+    updated_bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
+    return updated_bird
+
 @api_router.delete("/birds/{bird_id}")
 async def delete_bird(bird_id: str):
     result = await db.birds.delete_one({"id": bird_id})

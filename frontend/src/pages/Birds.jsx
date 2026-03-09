@@ -361,7 +361,7 @@ export const Birds = () => {
   // Handle inline gender change for newborns (unknown gender)
   const handleInlineGenderChange = async (bird, newGender) => {
     try {
-      await birdsApi.update(bird.id, { gender: newGender });
+      await birdsApi.partialUpdate(bird.id, { gender: newGender });
       setBirds(prev => prev.map(b => 
         b.id === bird.id ? { ...b, gender: newGender } : b
       ));

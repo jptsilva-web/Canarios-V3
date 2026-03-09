@@ -32,6 +32,7 @@ export const birdsApi = {
   getUniqueStams: () => api.get('/birds/stams'),
   create: (data) => api.post('/birds', data),
   update: (id, data) => api.put(`/birds/${id}`, data),
+  partialUpdate: (id, data) => api.patch(`/birds/${id}`, data),
   delete: (id) => api.delete(`/birds/${id}`),
 };
 
