@@ -176,6 +176,7 @@ class Egg(BaseModel):
     hatched_date: Optional[str] = None
     band_number: Optional[str] = None
     banded_date: Optional[str] = None
+    sex: Optional[str] = None  # male, female, unknown
 
 class Clutch(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -205,10 +206,11 @@ class AddEggRequest(BaseModel):
     laid_date: Optional[str] = None
 
 class UpdateEggRequest(BaseModel):
-    status: EggStatus
+    status: Optional[EggStatus] = None
     hatched_date: Optional[str] = None
     band_number: Optional[str] = None
     banded_date: Optional[str] = None
+    sex: Optional[str] = None  # male, female, unknown
 
 class Contact(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -704,22 +706,31 @@ async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest):
     eggs = clutch.get("eggs", [])
     egg_found = False
     egg_data = None
-    for egg in eggs:
+    
+    logging.info(f"Updating egg {egg_id} with input: {input.model_dump()}")
+    
+    for i, egg in enumerate(eggs):
         if egg["id"] == egg_id:
-            egg["status"] = input.status
-            if input.hatched_date:
-                egg["hatched_date"] = input.hatched_date
-            if input.band_number:
-                egg["band_number"] = input.band_number
-            if input.banded_date:
-                egg["banded_date"] = input.banded_date
+            # Only update fields that are provided
+            if input.status is not None:
+                eggs[i]["status"] = input.status
+            if input.hatched_date is not None:
+                eggs[i]["hatched_date"] = input.hatched_date
+            if input.band_number is not None:
+                eggs[i]["band_number"] = input.band_number
+            if input.banded_date is not None:
+                eggs[i]["banded_date"] = input.banded_date
+            if input.sex is not None:
+                eggs[i]["sex"] = input.sex
+                logging.info(f"Setting sex to {input.sex} for egg {egg_id}")
             egg_found = True
-            egg_data = egg
+            egg_data = eggs[i]
             break
     
     if not egg_found:
         raise HTTPException(status_code=404, detail="Egg not found")
     
+    logging.info(f"Saving eggs: {eggs}")
     await db.clutches.update_one({"id": clutch_id}, {"$set": {"eggs": eggs}})
     
     # Auto-create bird when egg is banded (has band_number and status is hatched)
@@ -745,6 +756,14 @@ async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest):
             )
             await db.birds.insert_one(new_bird.model_dump())
             logging.info(f"Auto-created bird record for banded chick: {input.band_number}")
+    
+    # If sex is updated and egg has band_number, also update the bird record
+    if input.sex is not None and egg_data and egg_data.get("band_number"):
+        await db.birds.update_one(
+            {"band_number": egg_data["band_number"]},
+            {"$set": {"gender": input.sex}}
+        )
+        logging.info(f"Updated bird gender for {egg_data['band_number']} to {input.sex}")
     
     updated_clutch = await db.clutches.find_one({"id": clutch_id}, {"_id": 0})
     return updated_clutch
