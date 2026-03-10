@@ -24,6 +24,7 @@ export const translations = {
       registerError: 'Erro ao criar conta',
       passwordMismatch: 'As passwords não coincidem',
       passwordTooShort: 'A password deve ter pelo menos 6 caracteres',
+      passwordMinLength: 'Mínimo de 6 caracteres',
       enterEmailForReset: 'Introduza o seu email para receber o código de recuperação',
       sendResetCode: 'Enviar Código',
       backToLogin: 'Voltar ao login',
@@ -465,6 +466,7 @@ export const translations = {
     seasons: {
       title: 'Temporadas de Criação',
       subtitle: 'Gerir os seus anos e temporadas de criação',
+      season: 'Época',
       addSeason: 'Adicionar Temporada',
       editSeason: 'Editar Temporada',
       year: 'Ano',
@@ -526,6 +528,7 @@ export const translations = {
       registerError: 'Error creating account',
       passwordMismatch: 'Passwords do not match',
       passwordTooShort: 'Password must be at least 6 characters',
+      passwordMinLength: 'Minimum 6 characters',
       enterEmailForReset: 'Enter your email to receive the recovery code',
       sendResetCode: 'Send Code',
       backToLogin: 'Back to login',
@@ -967,6 +970,7 @@ export const translations = {
     seasons: {
       title: 'Breeding Seasons',
       subtitle: 'Manage your breeding years and seasons',
+      season: 'Season',
       addSeason: 'Add Season',
       editSeason: 'Edit Season',
       year: 'Year',
@@ -1028,6 +1032,7 @@ export const translations = {
       registerError: 'Error al crear la cuenta',
       passwordMismatch: 'Las contraseñas no coinciden',
       passwordTooShort: 'La contraseña debe tener al menos 6 caracteres',
+      passwordMinLength: 'Mínimo 6 caracteres',
       enterEmailForReset: 'Introduce tu email para recibir el código de recuperación',
       sendResetCode: 'Enviar Código',
       backToLogin: 'Volver al login',
@@ -1469,6 +1474,7 @@ export const translations = {
     seasons: {
       title: 'Temporadas de Cría',
       subtitle: 'Gestionar tus años y temporadas de cría',
+      season: 'Temporada',
       addSeason: 'Añadir Temporada',
       editSeason: 'Editar Temporada',
       year: 'Año',

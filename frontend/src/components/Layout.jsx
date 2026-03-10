@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -30,9 +30,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from './ui/popover';
+import api from '../lib/api';
 
-const getNavItems = (t) => [
-  { path: '/seasons', icon: CalendarDays, label: t('seasons.title'), key: 'seasons' },
+const getNavItems = (t, activeYear) => [
+  { path: '/seasons', icon: CalendarDays, label: `${t('seasons.season') || 'Época'} ${activeYear || new Date().getFullYear()}`, key: 'seasons' },
   { path: '/', icon: LayoutDashboard, label: t('nav.dashboard'), key: 'dashboard' },
   { path: '/zones', icon: Grid3X3, label: t('nav.zones'), key: 'zones' },
   { path: '/birds', icon: Bird, label: t('nav.birds'), key: 'birds' },
@@ -51,11 +52,27 @@ const getSettingsItem = (t) => ({ path: '/settings', icon: Settings, label: t('n
 export const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [langPopoverOpen, setLangPopoverOpen] = useState(false);
+  const [activeYear, setActiveYear] = useState(new Date().getFullYear());
   const location = useLocation();
   const { language, changeLanguage, t } = useLanguage();
   const { user, logout } = useAuth();
   
-  const navItems = getNavItems(t);
+  // Fetch active season year
+  useEffect(() => {
+    const fetchActiveSeason = async () => {
+      try {
+        const response = await api.get('/seasons/active');
+        if (response.data && response.data.year) {
+          setActiveYear(response.data.year);
+        }
+      } catch (error) {
+        console.error('Error fetching active season:', error);
+      }
+    };
+    fetchActiveSeason();
+  }, []);
+  
+  const navItems = getNavItems(t, activeYear);
   const settingsItem = getSettingsItem(t);
   const currentLang = languages.find(l => l.code === language);
 

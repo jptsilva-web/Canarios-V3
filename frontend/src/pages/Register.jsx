@@ -127,6 +127,7 @@ export const Register = () => {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="pl-10 pr-10 bg-[#1A2035] border-white/10 text-white placeholder:text-slate-500"
                     required
+                    minLength={6}
                     data-testid="register-password"
                   />
                   <button
@@ -137,6 +138,9 @@ export const Register = () => {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                <p className="text-xs text-slate-500">
+                  {t('auth.passwordMinLength') || 'Mínimo de 6 caracteres'}
+                </p>
               </div>
 
               <div className="space-y-2">
