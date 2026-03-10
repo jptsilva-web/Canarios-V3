@@ -17,11 +17,14 @@ import {
   GitBranch,
   Globe,
   CalendarDays,
-  Printer
+  Printer,
+  LogOut,
+  User
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Toaster } from './ui/sonner';
 import { useLanguage, languages } from '../lib/LanguageContext';
+import { useAuth } from '../lib/AuthContext';
 import {
   Popover,
   PopoverContent,
@@ -29,6 +32,7 @@ import {
 } from './ui/popover';
 
 const getNavItems = (t) => [
+  { path: '/seasons', icon: CalendarDays, label: t('seasons.title'), key: 'seasons' },
   { path: '/', icon: LayoutDashboard, label: t('nav.dashboard'), key: 'dashboard' },
   { path: '/zones', icon: Grid3X3, label: t('nav.zones'), key: 'zones' },
   { path: '/birds', icon: Bird, label: t('nav.birds'), key: 'birds' },
@@ -38,7 +42,6 @@ const getNavItems = (t) => [
   { path: '/calendar', icon: Calendar, label: t('nav.calendar'), key: 'calendar' },
   { path: '/newborn', icon: Baby, label: t('nav.newborn'), key: 'newborn' },
   { path: '/reports', icon: BarChart3, label: t('nav.reports'), key: 'reports' },
-  { path: '/seasons', icon: CalendarDays, label: t('seasons.title'), key: 'seasons' },
   { path: '/print-cards', icon: Printer, label: t('printCards.title'), key: 'print-cards' },
   { path: '/contacts', icon: Users, label: t('nav.contacts'), key: 'contacts' },
 ];
@@ -50,6 +53,7 @@ export const Layout = ({ children }) => {
   const [langPopoverOpen, setLangPopoverOpen] = useState(false);
   const location = useLocation();
   const { language, changeLanguage, t } = useLanguage();
+  const { user, logout } = useAuth();
   
   const navItems = getNavItems(t);
   const settingsItem = getSettingsItem(t);
@@ -176,7 +180,20 @@ export const Layout = ({ children }) => {
           </div>
           
           {/* Settings at the bottom */}
-          <div className="pt-4 border-t border-white/5">
+          <div className="pt-4 border-t border-white/5 space-y-1">
+            {/* User info */}
+            {user && (
+              <div className="flex items-center gap-3 px-4 py-2 mb-2">
+                <div className="w-8 h-8 rounded-full bg-[#FFC300]/20 flex items-center justify-center">
+                  <User size={16} className="text-[#FFC300]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white truncate">{user.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                </div>
+              </div>
+            )}
+            
             <NavLink
               to={settingsItem.path}
               data-testid={`nav-${settingsItem.key}`}
@@ -192,6 +209,16 @@ export const Layout = ({ children }) => {
               <span>{settingsItem.label}</span>
               {location.pathname === settingsItem.path && <ChevronRight size={16} className="ml-auto" />}
             </NavLink>
+            
+            {/* Logout button */}
+            <button
+              onClick={logout}
+              data-testid="logout-btn"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-red-400 hover:text-red-300 hover:bg-red-500/10 w-full"
+            >
+              <LogOut size={20} />
+              <span>{t('auth.logout') || 'Sair'}</span>
+            </button>
           </div>
         </nav>
       </aside>

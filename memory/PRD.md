@@ -5,9 +5,10 @@ Build a canary breeding control/management web application with a local database
 
 ## Architecture
 - **Frontend**: React 19 + Tailwind CSS + Shadcn/UI components
-- **Backend**: FastAPI (Python)
+- **Backend**: FastAPI (Python) with JWT authentication
 - **Database**: MongoDB (via Motor async driver)
 - **Theme**: Dark Navy (#1A2035) with accent colors (Yellow #FFC300, Teal #00BFA6, Pink #E91E63, Orange #FF9800)
+- **Authentication**: JWT tokens with bcrypt password hashing
 
 ## User Personas
 1. **Hobby Breeder**: Manages 10-50 pairs, needs simple tracking
@@ -15,6 +16,7 @@ Build a canary breeding control/management web application with a local database
 3. **Breeding Club Member**: Shares contacts and breeding data with community
 
 ## Core Requirements (Static)
+- **User Authentication** - Login, Register, Password Recovery via Email
 - Zone/Cage configuration with visual grid layout
 - Bird registry with band numbers, colors, genealogy
 - Breeding pair management with cage assignment
@@ -26,8 +28,16 @@ Build a canary breeding control/management web application with a local database
 - Season/Year management for multi-year breeding
 - Printable breeding cards
 - Multi-language support (Portuguese, English, Spanish)
+- Backup & Restore functionality
 
-## What's Been Implemented (December 2025)
+## What's Been Implemented (March 2025)
+- ✅ **User Authentication System**
+  - Login page with email/password
+  - Register page for new users
+  - Password recovery via email (Gmail SMTP)
+  - JWT tokens for session management
+  - Protected routes - requires login to access app
+  - User info displayed in sidebar with logout button
 - ✅ Full-stack application with React + FastAPI + MongoDB
 - ✅ Dashboard with stats cards and task preview
 - ✅ Bird registry with CRUD, search, gender filter, and **parent selection for genealogy**

@@ -1,12 +1,13 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, APIRouter, HTTPException, Query, BackgroundTasks, UploadFile, File, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -17,6 +18,9 @@ from email.mime.multipart import MIMEMultipart
 import json
 import tempfile
 import zipfile
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+import secrets
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -31,6 +35,48 @@ SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
 SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
 SMTP_EMAIL = os.environ.get('SMTP_EMAIL', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+
+# JWT Configuration
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32))
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Security
+security = HTTPBearer()
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
 # Create the main app
 app = FastAPI(title="Canary Breeding Control API")
@@ -58,10 +104,50 @@ class EggStatus(str, Enum):
     HATCHED = "hatched"
     DEAD = "dead"
 
+# ============ USER & AUTH MODELS ============
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    name: str
+    password_hash: str
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    is_active: bool = True
+
+class UserRegister(BaseModel):
+    email: str
+    name: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    created_at: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+class PasswordResetToken(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    token: str
+    expires_at: str
+    used: bool = False
+
 # Season/Year Model
 class Season(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     year: int
     name: str  # e.g., "2024", "2024/2025", "Breeding Season 2024"
     start_date: Optional[str] = None
@@ -82,6 +168,7 @@ class SeasonCreate(BaseModel):
 class Zone(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     name: str
     rows: int = 4
     columns: int = 4
@@ -95,6 +182,7 @@ class ZoneCreate(BaseModel):
 class Cage(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     zone_id: str
     row: int
     column: int
@@ -110,6 +198,7 @@ class CageCreate(BaseModel):
 class Bird(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     band_number: str
     band_year: int
     breeder_number: Optional[str] = None
@@ -141,6 +230,7 @@ class BirdCreate(BaseModel):
 class Pair(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     name: Optional[str] = None
     cage_id: str
     male_id: Optional[str] = None
@@ -181,6 +271,7 @@ class Egg(BaseModel):
 class Clutch(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     pair_id: str
     start_date: str
     status: ClutchStatus = ClutchStatus.LAYING
@@ -215,6 +306,7 @@ class UpdateEggRequest(BaseModel):
 class Contact(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
     name: str
     breeder_number: Optional[str] = None
     phone: Optional[str] = None
@@ -312,6 +404,147 @@ async def send_email_notification(to_email: str, subject: str, body: str, smtp_e
     except Exception as e:
         logging.error(f"Failed to send email: {e}")
         return False
+
+# ============ AUTHENTICATION API ============
+@api_router.post("/auth/register")
+async def register(input: UserRegister):
+    # Check if email already exists
+    existing = await db.users.find_one({"email": input.email.lower()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create new user
+    user = User(
+        email=input.email.lower(),
+        name=input.name,
+        password_hash=get_password_hash(input.password)
+    )
+    await db.users.insert_one(user.model_dump())
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": user.id})
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            created_at=user.created_at
+        )
+    }
+
+@api_router.post("/auth/login")
+async def login(input: UserLogin):
+    user = await db.users.find_one({"email": input.email.lower()}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not verify_password(input.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="Account is deactivated")
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": user["id"]})
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse(
+            id=user["id"],
+            email=user["email"],
+            name=user["name"],
+            created_at=user["created_at"]
+        )
+    }
+
+@api_router.get("/auth/me")
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    return UserResponse(
+        id=current_user["id"],
+        email=current_user["email"],
+        name=current_user["name"],
+        created_at=current_user["created_at"]
+    )
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(input: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+    user = await db.users.find_one({"email": input.email.lower()}, {"_id": 0})
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "If the email exists, a reset link will be sent"}
+    
+    # Generate reset token
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    
+    token_record = PasswordResetToken(
+        user_id=user["id"],
+        token=reset_token,
+        expires_at=expires_at
+    )
+    await db.password_reset_tokens.insert_one(token_record.model_dump())
+    
+    # Send reset email
+    reset_link = f"https://ornituga.com/reset-password?token={reset_token}"
+    email_body = f"""
+    <h2>Recuperação de Password - OrniTuga</h2>
+    <p>Olá {user['name']},</p>
+    <p>Recebemos um pedido para recuperar a sua password.</p>
+    <p>Use o seguinte código para redefinir a sua password:</p>
+    <h3 style="background: #FFC300; padding: 10px; display: inline-block; border-radius: 5px;">{reset_token[:8].upper()}</h3>
+    <p>Este código expira em 1 hora.</p>
+    <p>Se não solicitou esta recuperação, ignore este email.</p>
+    <br>
+    <p>Cumprimentos,<br>OrniTuga</p>
+    """
+    
+    background_tasks.add_task(
+        send_email,
+        user["email"],
+        "Recuperação de Password - OrniTuga",
+        email_body
+    )
+    
+    return {"message": "If the email exists, a reset link will be sent", "token_preview": reset_token[:8].upper()}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(input: ResetPasswordRequest):
+    # Find valid token (check both full token and first 8 chars)
+    token_record = await db.password_reset_tokens.find_one({
+        "$or": [
+            {"token": input.token},
+            {"token": {"$regex": f"^{input.token.lower()}", "$options": "i"}}
+        ],
+        "used": False
+    }, {"_id": 0})
+    
+    if not token_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    # Check if token is expired
+    expires_at = datetime.fromisoformat(token_record["expires_at"].replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="Token has expired")
+    
+    # Update password
+    new_hash = get_password_hash(input.new_password)
+    await db.users.update_one(
+        {"id": token_record["user_id"]},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    # Mark token as used
+    await db.password_reset_tokens.update_one(
+        {"id": token_record["id"]},
+        {"$set": {"used": True}}
+    )
+    
+    return {"message": "Password reset successfully"}
 
 # ============ SETTINGS API ============
 @api_router.get("/settings")
