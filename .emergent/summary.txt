@@ -1,187 +1,188 @@
 <analysis>**original_problem_statement:**
-The user wants to create a Canary Breeding Management Application, similar to a system shown in a YouTube video (Orniplus). The application should run locally and manage the entire breeding process.
+The user wants to create a Canary Breeding Management Application (OrniTuga) to manage the entire breeding process from pairing to weaning.
 
 **PRODUCT REQUIREMENTS:**
-- **Dashboard**: A central view with key statistics, daily tasks, and recent activity.
-- **Zone & Cage Management**: Visually create and manage zones with a grid of cages. Cages are color-coded based on breeding status.
-- **Bird Registry**: A database of all birds with unique band numbers, year, gender, STAM, and Class.
-- **Pair Management**: Create breeding pairs by assigning birds to a cage.
-- **Clutch & Egg Tracking**: Track clutches and the status of individual eggs (laid, fertile, infertile, hatched). Hatched eggs should show the band number.
-- **Newborns Page**: A list of newly banded chicks with their details.
-- **Task Management**: A calendar for automatically generated and manually added tasks.
-- **Email Notifications**: All tasks should trigger an email notification.
-- **Settings Page**: Configure breeding cycle timings and email settings.
-- **Genealogy**: A family tree visualization for each bird.
-- **Statistics & Reports**: A page with detailed breeding statistics, performance trends, and year-over-year comparisons.
-- **Data Export**: Ability to export data to CSV/PDF.
-- **Multi-language Support**: The application should be translatable into Portuguese, English, and Spanish, with a visual flag selector.
-- **Season Management**: The ability to manage data by breeding season/year.
-- **Printable Breeding Cards**: Generate printable cards for each breeding pair.
-- **IIS Compatibility**: User wants to be able to deploy the application on a Windows server using IIS.
-- **Backup & Restore**: A feature to back up all application data to a file and restore it.
+- **Authentication**: A full multi-user system with login, registration, and password recovery.
+- **Data Isolation**: Each user's data must be private. Each breeding season (year) must have its own isolated data (cages, pairs, clutches), but birds should be global and usable across seasons.
+- **Dashboard**: A central view with key statistics, daily tasks, and recent activity for the active season.
+- **Zone & Cage Management**: A visual grid of cages, color-coded based on the current breeding status of the pair inside.
+- **Bird Registry**: A global database of all birds, available across seasons. Should allow importing birds from previous years into the current year's breeding stock.
+- **Pair & Clutch Management**: Create breeding pairs and track their clutches and eggs.
+- **Lifecycle Status**: The application must automatically track and display the status of each pair through its entire lifecycle: Paired -> Laying -> Incubating -> Hatched -> Banded -> Separator -> Weaning -> Completed.
+- **Task Management**: A calendar for automatically generated and manually added tasks with email notifications.
+- **Settings Page**: Configure breeding cycle timings (e.g., days for weaning) and email settings.
+- **Multi-language Support**: Portuguese, English, and Spanish.
 
 **User's preferred language**: Portuguese (The user has been communicating exclusively in Portuguese. The next agent MUST respond in Portuguese.)
 
 **what currently exists?**
-A comprehensive full-stack Canary Breeding Management application (OrniTuga) with a FastAPI backend, React frontend, and MongoDB database. It features a dashboard, visual zone/cage management, a bird registry, pair/clutch/egg tracking, a newborns page, a tasks page, and extensive internationalization (EN, PT, ES).
+A comprehensive full-stack application with a FastAPI backend, React frontend, and MongoDB. The last session implemented a complete multi-user authentication system (login, registration, JWT) and added  to all major data models to begin data isolation. A sophisticated, date-driven logic for updating cage colors based on the full breeding lifecycle was also implemented and tested.
 
-The last session was an intense period of iterative UI/UX refinement based on rapid user feedback. Major changes were made to the core logic for displaying cage/pair status, moving from a simple clutch status to a more complex calculation based on the aggregate state of all eggs within a pair's clutches. Many pages (, , , ) were refactored to implement bug fixes, add translations, and improve workflows.
+The agent began implementing the per-season data isolation by adding a  field to the , , , and  models and started updating the backend endpoints. This work is incomplete.
 
 **Last working item**:
-- **Last item agent was working**: The user requested two things:
-    1.  Move the Definições (Settings) menu item to the bottom of the sidebar.
-    2.  Implement a new feature within Definições to allow backing up and restoring all application data.
-    The agent acknowledged the request and was about to start implementation.
-- **Status**: NOT STARTED
+- **Last item agent was working**: The user requested that each breeding season have its own isolated data (cages, pairs, clutches, etc.), while birds remain global and can be imported from previous seasons. The agent was in the middle of updating all backend endpoints to filter data by the active . The endpoints for  and  were updated, but , , and others were not.
+- **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: both. The backend logic for backup (e.g., ) and restore () needs to be tested via bash commands. The frontend buttons can be verified with a screenshot. A full e2e test (backup, wipe DB, restore, verify data) is recommended.
+- **Which testing method agent to use?**: both. Backend API endpoints must be tested with  to ensure they correctly filter by . The frontend needs to be tested to confirm that changing the active season correctly clears and loads the new season's data (zones, pairs, etc.).
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Bug in Tasks Page (P0)**
-  - **Description**: The user reported that after completing a single task on the  page, all other tasks disappear from the list. This is a critical bug rendering the Tasks page unusable.
-  - **Status**: IN PROGRESS
-  - **Is recurring issue?**: N
-  - **Should Test frontend/backend/both after fix?**: Frontend
-
-- **Issue 2: Implement Backup/Restore Feature (P1)**
-  - **Description**: Implement functionality in the Settings page to allow the user to create a full database backup and restore from a backup file.
-  - **Status**: NOT STARTED
-  - **Is recurring issue?**: N
-  - **Should Test frontend/backend/both after fix?**: Both
+- **Issue 1: Complete Season Data Isolation (P0)**
+- **Issue 2: Implement Import Birds from Previous Seasons (P1)**
+- **Issue 3: Implement Password Recovery Functionality (P2)**
 
 **Issues Detail**:
-- **Issue 1: Bug in Tasks Page**
-    - **Attempted fixes**: The agent identified the likely source of the bug in  within the  function. The filter logic  was suspected to be faulty, likely due to an incorrect or  ID being used, causing the filter to remove all tasks. However, no fix was actually implemented.
-    - **Next debug checklist**:
-        1.  Go to .
-        2.  Inspect the  function.
-        3.  Add  to check the  being passed and the contents of the  array before the filter.
-        4.  Correct the filter logic to ensure it only removes the specific task that was completed. A common issue is comparing an object with a primitive, or an undefined id.
-    - **Why fix this issue and what will be achieved with the fix?**: This is a critical bug that makes task management impossible. Fixing it will restore core functionality.
-    - **Status**: IN PROGRESS
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Frontend. Create a few tasks, complete one, and verify that only that one is removed from the list.
-    - **Blocked on other issue**: None
+- **Issue 1: Complete Season Data Isolation**
+  - **Attempted fixes**: The agent successfully added the  field to the , , , and  models in . The GET and POST endpoints for  and  were modified to filter by and include the active .
+  - **Next debug checklist**:
+    1.  Continue modifying . Update all endpoints related to , , , and  to also use the active  for all queries and data creation.
+    2.  Ensure that when a new season is created and set as active, the pages for Zones, Pairs, etc., appear empty.
+    3.  Verify that creating new data (e.g., a new pair) correctly associates it with the active .
+  - **Why fix this issue and what will be achieved with the fix?**: This is a critical feature that allows the user to manage multiple breeding years cleanly within the same application.
+  - **Status**: IN PROGRESS
+  - **Is recurring issue?**: N
+  - **Should Test frontend/backend/both after fix?**: Both.
+  - **Blocked on other issue**: None
 
-- **Issue 2: Implement Backup/Restore Feature**
-    - **Attempted fixes**: None.
-    - **Next debug checklist**:
-        1.  Create two new API endpoints in : one for backup (e.g., ) and one for restore (e.g., ).
-        2.  The backup endpoint should execute a shell command like  to create a database archive and return it as a file download.
-        3.  The restore endpoint should accept a file upload and use  to import the data.
-        4.  In , add two buttons: Backup Data and Restore Data.
-        5.  The Backup button should call the backup endpoint and trigger a file download.
-        6.  The Restore button should open a file selector and upload the selected file to the restore endpoint.
-    - **Why fix this issue and what will be achieved with the fix?**: This is a user-requested feature that provides data security and portability.
-    - **Status**: NOT STARTED
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Both.
-    - **Blocked on other issue**: None
+- **Issue 2: Implement Import Birds from Previous Seasons**
+  - **Attempted fixes**: None.
+  - **Next debug checklist**:
+    1.  In , add a filter or button (e.g., Import Birds) that allows the user to view all birds they own, regardless of the season they were created in.
+    2.  When making new pairs for the current season, the dropdowns for selecting a male and female should list all available birds, not just birds from the current season. (Since birds are global per user, this might already be the case, but it needs to be verified).
+  - **Why fix this issue and what will be achieved with the fix?**: To allow users to reuse their breeding stock across different years.
+  - **Status**: NOT STARTED
+  - **Is recurring issue?**: N
+  - **Should Test frontend/backend/both after fix?**: Frontend.
+  - **Blocked on other issue**: None
+
+- **Issue 3: Implement Password Recovery Functionality**
+  - **Attempted fixes**: A placeholder UI and a stub endpoint () were created.
+  - **Next debug checklist**:
+    1.  In , fully implement the  endpoint to generate a secure reset token and send a password reset email using the existing email configuration.
+    2.  Create a new page in the frontend (e.g., ) that accepts the token from the URL.
+    3.  Create a new backend endpoint () to validate the token and update the user's password.
+  - **Why fix this issue and what will be achieved with the fix?**: It's an essential feature for any application with user accounts.
+  - **Status**: NOT STARTED
+  - **Is recurring issue?**: N
+  - **Should Test frontend/backend/both after fix?**: Both.
+  - **Blocked on other issue**: None
 
 **In progress Task List**:
-- **Task 1: Move Settings Menu Item (P1)**
-  - **Description**: The user requested moving the Definições (Settings) link to the bottom of the navigation sidebar.
-  - **Where to resume**: Edit  or the main layout component where the sidebar is defined. Reorder the navigation links.
-  - **What will be achieved with this?**: Fulfills a direct user UI preference.
-  - **Status**: NOT STARTED
-  - **Should Test frontend/backend/both after fix?**: Frontend (screenshot).
+- **Task 1: Complete Season Data Isolation**
+  - **Where to resume**: In , continue updating the API endpoints (, ,  stats, etc.) to use the active  for all data operations.
+  - **What will be achieved with this?**: The application's data for breeding activities will be correctly partitioned by year/season.
+  - **Status**: IN PROGRESS
+  - **Should Test frontend/backend/both after fix?**: Both.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-  - **Complete Minor Translations (P1)**: While a major translation pass was completed, the user continues to find untranslated UI elements (e.g., in dynamically generated task text). A final review of the entire application is needed.
+    - Implement Import Birds from Previous Seasons (P1)
+    - Implement Password Recovery Functionality (P2)
 - **Future Tasks**:
-  - **IIS Compatibility (P2)**: The agent has created documentation () and a  file. However, the compatibility has not been tested. This remains a backlog item.
+    - Finalize IIS Compatibility testing and documentation.
+    - Implement Genealogy (Family Tree visualization).
+    - Build the Statistics & Reports page.
+    - Add Data Export (CSV/PDF) functionality.
+    - Add Printable Breeding Cards feature.
 
 **Completed work in this session**
-- **Core Status Logic Overhaul**: Refactored the entire system for determining cage/pair status. The logic is no longer based on the simple  field but on a real-time calculation of the contents of a pair's clutches (presence of fresh, fertile, hatched, or banded eggs). This fixed numerous user-reported inconsistencies.
-- **New Statuses & Colors**: Added new cage statuses for Born (Nascidos) and Banded (Anilhados) and adjusted all status colors for better distinction based on user feedback.
-- **Egg Interaction Workflow**: Completely rewrote the logic for interacting with eggs. The popup menu is now context-aware (e.g., a fertile egg only shows options to mark as hatched/dead). It also now correctly prevents any changes on a clutch that is marked completed.
-- **Navigation & UI Fixes**:
-  - Fixed navigation from the  page to the  page, so clicking a cage's View Pair button now correctly navigates to and auto-expands the specific pair's details.
-  - Added frontend validation to the Add Pair form to require both a male and a female.
-- **Newborns Page Refactor**: Replaced the static Pair column with an editable Gender column, allowing the user to set the sex of newborns directly from the table.
-- **Widespread Internationalization (i18n)**: Translated dozens of previously hardcoded strings across the Dashboard, Tasks, and Newborns pages.
+- **Multi-User Authentication System**: Implemented a complete login, registration, and JWT-based authentication system. All major data models now include a  field, and backend endpoints were updated to filter data by the logged-in user.
+- **Full-Cycle Cage Status Logic**: Implemented and tested a comprehensive color-coded status system in . Cage colors now automatically update based on the breeding lifecycle (Laying, Incubating, Born, Banded, Separator, Weaning) driven by dates and user-defined settings.
+- **Inline Gender Editing**: Fixed bugs and implemented inline gender editing on both the  and  pages for birds with an Unknown gender.
+- **UI/UX Enhancements**: Moved the Breeding Seasons menu item to the top of the sidebar and updated it to show the active year (e.g., Season 2026). Added password requirement validation on the registration page.
+- **Critical Bug Fix**: Fixed the bug on the  page where completing one task caused all others to disappear.
 
 **Earlier issues found/mentioned but not fixed**
-- **Task Completion Bug**: The agent acknowledged this critical bug in  (Chat Messages 343-345) but was sidetracked by other user requests and never implemented the fix.
+- None. The high-priority  page bug was fixed. Other pending items are new features.
 
 **Known issue recurrence from previous fork**
-- ** error**: The root cause (prop-drilling the translation function ) has not been addressed, only patched in specific components. This remains a potential source of future bugs.
+- ** error**: The root cause (prop-drilling the translation function  instead of using the  hook directly in all components) has not been globally addressed. This remains a potential source of future bugs.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend**: FastAPI, Pydantic, Motor (async MongoDB driver)
-- **Frontend**: React, , , TailwindCSS, Shadcn/UI, , 
-- **Internationalization (i18n)**: , , and a custom  hook.
+- **Backend**: FastAPI, Pydantic, Motor (async MongoDB driver), JWT (, )
+- **Frontend**: React, , , TailwindCSS, Shadcn/UI
+- **Authentication**: JWT token-based authentication.
 - **Database**: MongoDB
 
 **key DB schema**
+- **users**: 
 - **seasons**: 
-- **birds**: 
+- **birds**:  (Global per user, not per season)
+- **zones**: 
+- **cages**: 
 - **pairs**: 
 - **clutches**: 
-- **eggs**: 
 
 **changes in tech stack**
-- No new technologies were added.
+- Added  and  for authentication.
 
 **All files of reference**
-- : Heavily modified to implement the new egg-based status calculation logic and color legend.
-- : Heavily modified to implement the new egg interaction workflow, status badges, auto-expansion, and pair creation validation.
-- : Refactored to replace the Pair column with an editable Gender column.
-- : Updated to use translation keys for all static text.
-- : Identified as containing a critical bug in .
-- : All three files were significantly expanded with new keys for the Dashboard, Newborns page, and various UI elements.
+- : Heavily modified. Contains all new auth logic, , and  model and endpoint modifications.
+- : Heavily modified to implement the full lifecycle color logic.
+- : Modified for inline gender editing.
+- : Modified for inline gender editing.
+- : Modified to implement protected routes for authentication.
+- : Modified to display user info, a logout button, and the active season year.
+- : New file for the login page.
+- : New file for the registration page.
+- : Updated with keys for auth and UI text.
 
 **Areas that need refactoring**:
-- ****: This file is monolithic and should be broken down into a modular structure (e.g., routers, models, services).
-- ****: The  function is buggy and needs to be fixed immediately.
-- **Prop Drilling for Translations**: The  function is still being passed down through props in some places. Components should use the  hook directly to improve maintainability.
+- ****: This file is critically oversized. It urgently needs to be broken down into a modular structure using FastAPI's  for maintainability (e.g., , , ).
+- **Data Migration for **: All existing data currently has . While the app works, a one-time migration script should be created to associate all this data with the first registered user account.
 
 **key api endpoints**
-- ****: Used by the Newborns page to update a bird's gender.
+- : Creates a new user.
+- : Logs in a user and returns a JWT token.
+- : Partially updates a bird (used for setting gender).
+- All other data endpoints (, , etc.) now require a valid JWT token and are scoped by  and (partially) .
 
 **Critical Info for New Agent**
 - **MUST Speak Portuguese**: All communication with the user must be in Portuguese.
-- **User is Highly Engaged**: The user provides frequent, detailed feedback. Expect rapid, iterative cycles on UI/UX details.
-- **Core Status Logic is Critical**: The most important concept to grasp is that cage/pair status colors and badges are derived from the *aggregate state of all eggs* across a pair's clutches, ignoring clutches marked as 'completed'. Any changes to  or  must respect this complex logic.
-- **Fix the Tasks Page First**: The bug where completing one task removes all tasks is a high-priority blocker for the user. This should be addressed before starting the new backup/restore feature.
+- **Season & User Scoping is CRITICAL**: The top priority is to complete the work of scoping all relevant data endpoints by the active . The application's core logic now depends on this data separation.
+- **Legacy Data is Shared**: Data created before the auth system was implemented has . The backend logic is intentionally written to allow any logged-in user to see this data to prevent data loss. New data is correctly isolated to the user who creates it.
 
 **documents and test reports created in this job**
 -  (updated)
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **Request:** Move the Settings menu to the bottom of the sidebar and add a Backup/Restore feature. (PENDING)
-2.  **Report:** On the  page, a cage for a pair with a completed clutch was still showing the incubation color. (FIXED)
-3.  **Request:** On the  page, replace the Pair column with an editable Gender column. (COMPLETED)
-4.  **Report:** On the , several titles (Upcoming Tasks, Quick Stats, Status Legend) were not translated. (COMPLETED)
-5.  **Report:** Inside the 's Upcoming Tasks panel, the task type (laying) and relative date (Today) were in English. (COMPLETED)
-6.  **Report:** When a task is completed, all other tasks disappear from the list. (ACKNOWLEDGED, NOT FIXED)
-7.  **Report:** The laying and days to separate statuses disappeared from the color legend. (FIXED, laying was re-added)
-8.  **Request:** The logic for interacting with eggs is confusing. An egg that is already fertile shouldn't show the fertile/infertile option again. When a clutch is completed, nothing should be editable. (COMPLETED)
-9.  **Request:** The order in the egg popup menu is wrong; Born should come before entering the Ring Number. (COMPLETED)
-10. **Report:** The form for creating a pair allows creating one with only a male or only a female. It should require both. (COMPLETED)
+1.  **(PENDING)** Request for per-season data isolation and a way to use birds from previous seasons.
+2.  **(DONE)** Request to add a password length hint on the registration page and show the active season's year in the sidebar.
+3.  **(DONE)** User reported the registration form was not working; agent investigated and confirmed it was working correctly, likely a lack of UI feedback.
+4.  **(IN PROGRESS)** Request to implement a full multi-user authentication system and per-year data isolation.
+5.  **(DONE)** Request to fix gender display on the  page and add inline gender editing on the  page for chicks.
+6.  **(DONE)** User provided a detailed explanation of the desired logic for cage status colors throughout the breeding cycle.
+7.  **(DONE)** User reported that marking a bird as born did not update the cage color.
+8.  **(DONE)** User reported that starting incubation did not update the cage color.
+9.  **(DONE)** User asked why an old preview URL was outdated.
+10. **(DONE)** User asked about the status of the IIS documentation.
 
 **Project Health Check:**
-- **Broken**: The  page is functionally broken due to the bug where completing one task clears the entire list.
-- **Mocked**: None.
+- **Broken**: None.
+- **Mocked**: The password recovery flow is mocked (UI exists, but backend logic is a stub).
 
 **3rd Party Integrations**
 - **Gmail**: For email notifications via the  Python library.
 - **i18next / react-i18next**: For application-wide internationalization.
+- **JWT Authentication**:  for token creation/validation and  for password hashing.
 
 **Testing status**
-- **Testing agent used after significant changes**: NO
+- **Testing agent used after significant changes**: YES (For the initial bug fixes and backup/restore feature).
 - **Troubleshoot agent used after agent stuck in loop**: NO
-- **Test files created**: None.
-- **Known regressions**: The  page functionality is a regression.
+- **Test files created**: 
+- **Known regressions**: None.
 
 **Credentials to test flow:**
 - **Email**: 
 - **Gmail App Password**: 
+- New user accounts can be created via the registration page for testing the multi-user functionality.
 
 **What agent forgot to execute**
-- The agent correctly identified the critical bug on the  page but got sidetracked by subsequent user requests for UI changes and never implemented the fix. This is the highest priority item for the next agent to address.</analysis>
+- The agent did not complete the full data isolation by  across all necessary endpoints (, , etc.).
+- The password recovery feature was not implemented beyond a UI/API stub.
+- The import birds from previous seasons feature was not implemented.</analysis>

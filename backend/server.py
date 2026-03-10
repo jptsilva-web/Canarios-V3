@@ -78,6 +78,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
+async def get_active_season_id(user_id: str) -> Optional[str]:
+    """Get the active season ID for a user"""
+    season = await db.seasons.find_one({
+        "is_active": True,
+        "$or": [{"user_id": user_id}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
+    return season.get("id") if season else None
+
 # Create the main app
 app = FastAPI(title="Canary Breeding Control API")
 
@@ -169,6 +177,7 @@ class Zone(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: Optional[str] = None
+    season_id: Optional[str] = None
     name: str
     rows: int = 4
     columns: int = 4
@@ -183,6 +192,7 @@ class Cage(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: Optional[str] = None
+    season_id: Optional[str] = None
     zone_id: str
     row: int
     column: int
@@ -272,6 +282,7 @@ class Clutch(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: Optional[str] = None
+    season_id: Optional[str] = None
     pair_id: str
     start_date: str
     status: ClutchStatus = ClutchStatus.LAYING
@@ -648,17 +659,31 @@ async def complete_manual_task(task_id: str):
 # ============ ZONES API ============
 @api_router.post("/zones", response_model=Zone)
 async def create_zone(input: ZoneCreate, current_user: dict = Depends(get_current_user)):
-    zone = Zone(**input.model_dump(), user_id=current_user["id"])
+    # Get active season
+    active_season_id = await get_active_season_id(current_user["id"])
+    zone = Zone(**input.model_dump(), user_id=current_user["id"], season_id=active_season_id)
     doc = zone.model_dump()
     await db.zones.insert_one(doc)
     return zone
 
 @api_router.get("/zones", response_model=List[Zone])
 async def get_zones(current_user: dict = Depends(get_current_user)):
-    zones = await db.zones.find(
-        {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]},
-        {"_id": 0}
-    ).to_list(1000)
+    # Get active season and filter by it - strict isolation
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    if active_season_id:
+        # When season is active, ONLY show data for that specific season (strict isolation)
+        query = {
+            "$and": [
+                {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]},
+                {"season_id": active_season_id}
+            ]
+        }
+    else:
+        # No active season - show all data including legacy
+        query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    
+    zones = await db.zones.find(query, {"_id": 0}).to_list(1000)
     return zones
 
 @api_router.get("/zones/{zone_id}", response_model=Zone)
@@ -692,6 +717,9 @@ async def generate_cages(zone_id: str, current_user: dict = Depends(get_current_
     if not zone:
         raise HTTPException(status_code=404, detail="Zone not found")
     
+    # Get active season
+    active_season_id = await get_active_season_id(current_user["id"])
+    
     # Delete existing cages for this zone
     await db.cages.delete_many({"zone_id": zone_id})
     
@@ -705,7 +733,8 @@ async def generate_cages(zone_id: str, current_user: dict = Depends(get_current_
                 row=row,
                 column=col,
                 label=f"{cage_number}",
-                user_id=current_user["id"]
+                user_id=current_user["id"],
+                season_id=active_season_id
             )
             cages.append(cage.model_dump())
             cage_number += 1
@@ -718,7 +747,21 @@ async def generate_cages(zone_id: str, current_user: dict = Depends(get_current_
 # ============ CAGES API ============
 @api_router.get("/cages", response_model=List[Cage])
 async def get_cages(zone_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
-    query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    # Get active season and filter by it - strict isolation
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    if active_season_id:
+        # When season is active, ONLY show data for that specific season (strict isolation)
+        query = {
+            "$and": [
+                {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]},
+                {"season_id": active_season_id}
+            ]
+        }
+    else:
+        # No active season - show all data including legacy
+        query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    
     if zone_id:
         query["zone_id"] = zone_id
     cages = await db.cages.find(query, {"_id": 0}).to_list(1000)
@@ -856,14 +899,33 @@ async def delete_bird(bird_id: str, current_user: dict = Depends(get_current_use
 # ============ PAIRS API ============
 @api_router.post("/pairs", response_model=Pair)
 async def create_pair(input: PairCreate, current_user: dict = Depends(get_current_user)):
-    pair = Pair(**input.model_dump(), user_id=current_user["id"])
+    # Get active season
+    active_season_id = await get_active_season_id(current_user["id"])
+    # Remove season_id from input if provided and use active season instead
+    pair_data = input.model_dump()
+    pair_data.pop("season_id", None)  # Remove from input data
+    pair = Pair(**pair_data, user_id=current_user["id"], season_id=active_season_id)
     doc = pair.model_dump()
     await db.pairs.insert_one(doc)
     return pair
 
 @api_router.get("/pairs", response_model=List[Pair])
 async def get_pairs(active_only: bool = False, current_user: dict = Depends(get_current_user)):
-    query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    # Get active season and filter by it - strict isolation
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    if active_season_id:
+        # When season is active, ONLY show data for that specific season (strict isolation)
+        query = {
+            "$and": [
+                {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]},
+                {"season_id": active_season_id}
+            ]
+        }
+    else:
+        # No active season - show all data including legacy
+        query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    
     if active_only:
         query["is_active"] = True
     pairs = await db.pairs.find(query, {"_id": 0}).to_list(1000)
@@ -908,12 +970,15 @@ async def delete_pair(pair_id: str, current_user: dict = Depends(get_current_use
 # ============ CLUTCHES API ============
 @api_router.post("/clutches", response_model=Clutch)
 async def create_clutch(input: ClutchCreate, current_user: dict = Depends(get_current_user)):
+    # Get active season
+    active_season_id = await get_active_season_id(current_user["id"])
     start_date = input.start_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     clutch = Clutch(
         pair_id=input.pair_id,
         start_date=start_date,
         notes=input.notes,
-        user_id=current_user["id"]
+        user_id=current_user["id"],
+        season_id=active_season_id
     )
     doc = clutch.model_dump()
     await db.clutches.insert_one(doc)
@@ -921,7 +986,21 @@ async def create_clutch(input: ClutchCreate, current_user: dict = Depends(get_cu
 
 @api_router.get("/clutches", response_model=List[Clutch])
 async def get_clutches(pair_id: Optional[str] = None, status: Optional[ClutchStatus] = None, current_user: dict = Depends(get_current_user)):
-    query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    # Get active season and filter by it - strict isolation
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    if active_season_id:
+        # When season is active, ONLY show data for that specific season (strict isolation)
+        query = {
+            "$and": [
+                {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]},
+                {"season_id": active_season_id}
+            ]
+        }
+    else:
+        # No active season - show all data including legacy
+        query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    
     if pair_id:
         query["pair_id"] = pair_id
     if status:
@@ -1153,14 +1232,30 @@ async def delete_contact(contact_id: str, current_user: dict = Depends(get_curre
 # ============ DASHBOARD API ============
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+    # Get active season and filter by it - strict isolation
+    active_season_id = await get_active_season_id(current_user["id"])
     user_filter = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    
+    # Season filter for pairs and clutches - strict isolation
+    if active_season_id:
+        season_filter = {
+            "$and": [
+                user_filter,
+                {"season_id": active_season_id}
+            ]
+        }
+    else:
+        season_filter = user_filter
+    
+    # Birds are global (not filtered by season)
     total_birds = await db.birds.count_documents(user_filter)
-    total_pairs = await db.pairs.count_documents(user_filter)
-    active_pairs = await db.pairs.count_documents({**user_filter, "is_active": True})
-    total_clutches = await db.clutches.count_documents(user_filter)
-    eggs_laying = await db.clutches.count_documents({**user_filter, "status": ClutchStatus.LAYING})
-    eggs_incubating = await db.clutches.count_documents({**user_filter, "status": ClutchStatus.INCUBATING})
-    chicks_hatching = await db.clutches.count_documents({**user_filter, "status": ClutchStatus.HATCHING})
+    # Pairs and clutches are filtered by season
+    total_pairs = await db.pairs.count_documents(season_filter)
+    active_pairs = await db.pairs.count_documents({**season_filter, "is_active": True})
+    total_clutches = await db.clutches.count_documents(season_filter)
+    eggs_laying = await db.clutches.count_documents({**season_filter, "status": ClutchStatus.LAYING})
+    eggs_incubating = await db.clutches.count_documents({**season_filter, "status": ClutchStatus.INCUBATING})
+    chicks_hatching = await db.clutches.count_documents({**season_filter, "status": ClutchStatus.HATCHING})
     
     return DashboardStats(
         total_birds=total_birds,
@@ -1176,10 +1271,23 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 async def get_tasks(current_user: dict = Depends(get_current_user)):
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     tasks = []
+    # Get active season and filter by it - strict isolation
+    active_season_id = await get_active_season_id(current_user["id"])
     user_filter = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
     
-    # Get all active clutches for this user
-    clutches = await db.clutches.find({**user_filter, "status": {"$ne": ClutchStatus.COMPLETED}}, {"_id": 0}).to_list(1000)
+    # Season filter for clutches - strict isolation
+    if active_season_id:
+        season_filter = {
+            "$and": [
+                user_filter,
+                {"season_id": active_season_id}
+            ]
+        }
+    else:
+        season_filter = user_filter
+    
+    # Get all active clutches for this user and season
+    clutches = await db.clutches.find({**season_filter, "status": {"$ne": ClutchStatus.COMPLETED}}, {"_id": 0}).to_list(1000)
     
     for clutch in clutches:
         pair = await db.pairs.find_one({"id": clutch["pair_id"]}, {"_id": 0})

@@ -400,7 +400,7 @@ class CanaryBreedingAPITester:
 def main():
     """Main test execution"""
     # Use the public backend URL from frontend .env
-    BASE_URL = "https://canary-breed-1.preview.emergentagent.com"
+    BASE_URL = "https://aviary-lifecycle.preview.emergentagent.com"
     
     print(f"🎯 Testing Canary Breeding Management API at: {BASE_URL}")
     
