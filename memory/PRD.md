@@ -26,11 +26,12 @@ Build a canary breeding control/management web application with a local database
 - Calendar view for breeding schedule
 - Contact directory for other breeders
 - Season/Year management for multi-year breeding
+- **Per-Season Data Isolation** - Each season has isolated zones, cages, pairs, clutches
 - Printable breeding cards
 - Multi-language support (Portuguese, English, Spanish)
 - Backup & Restore functionality
 
-## What's Been Implemented (March 2025)
+## What's Been Implemented (December 2025)
 - ✅ **User Authentication System** (COMPLETED)
   - Login page with email/password
   - Register page for new users
@@ -42,6 +43,13 @@ Build a canary breeding control/management web application with a local database
   - All endpoints filter by user_id
   - New data automatically associated with logged-in user
   - Legacy data (without user_id) visible to all users for backward compatibility
+- ✅ **Per-Season Data Isolation** (COMPLETED - December 2025)
+  - Zones, Cages, Pairs, and Clutches are isolated per season
+  - When a season is active, ONLY data for that season is visible
+  - Birds remain GLOBAL across all seasons (can be used in any season)
+  - Dashboard stats reflect active season (pairs, clutches filtered; birds global)
+  - Creating new data automatically associates with active season
+  - Switching seasons shows different data sets
 - ✅ Full-stack application with React + FastAPI + MongoDB
 - ✅ Dashboard with stats cards and task preview
 - ✅ Bird registry with CRUD, search, gender filter, and **parent selection for genealogy**
@@ -149,13 +157,15 @@ Build a canary breeding control/management web application with a local database
 - [x] Year-over-year comparison
 - [x] Complete all translations (toast messages, table headers, form labels)
 - [x] IIS deployment documentation
+- [x] **Per-Season Data Isolation** (zones, cages, pairs, clutches isolated per season)
 
 ### P1 (High Priority)
+- [ ] Import birds from previous seasons (UI to select birds from other seasons)
 - [ ] Bird photo attachments
 - [ ] Advanced analytics dashboard
 
 ### P2 (Medium Priority)
-- [ ] Multiple user support with authentication
+- [x] Multiple user support with authentication ✅ IMPLEMENTED
 - [ ] Mobile app version
 - [x] Data backup/restore functionality ✅ IMPLEMENTED
 
@@ -164,14 +174,16 @@ Build a canary breeding control/management web application with a local database
 - `/app/frontend/public/web.config` - IIS configuration file for React SPA + API proxy
 
 ## Next Tasks
-1. Bird photo attachments
-2. Consider multi-user authentication for shared aviaries
+1. Import birds from previous seasons (UI feature)
+2. Bird photo attachments
+3. Consider mobile app version
 
 ## Technical Notes
 - **Email Notifications**: Configured and working with Gmail App Password
 - **Genealogy**: Birds can now have parents assigned, enabling family tree visualization
 - **Exports**: Birds and breeding reports can be exported to CSV or PDF from the Reports page
-- **Seasons**: Data can be organized by breeding season/year
+- **Seasons**: Data can be organized by breeding season/year with STRICT ISOLATION
+- **Season Data Isolation**: Zones, Cages, Pairs, Clutches filtered by active season_id. Birds are GLOBAL.
 - **Print Cards**: Generate print-friendly cards for cage identification
 - **IIS Deployment**: Full documentation available for Windows Server deployment
 
@@ -181,6 +193,7 @@ Build a canary breeding control/management web application with a local database
 ```json
 {
   "id": "uuid",
+  "user_id": "uuid",
   "year": 2025,
   "name": "Breeding Season 2025",
   "start_date": "2025-01-01",
@@ -191,10 +204,38 @@ Build a canary breeding control/management web application with a local database
 }
 ```
 
-### birds
+### zones
 ```json
 {
   "id": "uuid",
+  "user_id": "uuid",
+  "season_id": "uuid",
+  "name": "string",
+  "rows": 4,
+  "columns": 4,
+  "created_at": "datetime"
+}
+```
+
+### cages
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "season_id": "uuid",
+  "zone_id": "uuid",
+  "row": 1,
+  "column": 1,
+  "label": "string",
+  "created_at": "datetime"
+}
+```
+
+### birds (GLOBAL - not filtered by season)
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
   "band_number": "string",
   "band_year": 2025,
   "gender": "male|female|unknown",
@@ -209,26 +250,29 @@ Build a canary breeding control/management web application with a local database
 }
 ```
 
-### pairs
+### pairs (filtered by season_id)
 ```json
 {
   "id": "uuid",
+  "user_id": "uuid",
+  "season_id": "uuid",
   "name": "string",
   "cage_id": "uuid",
   "male_id": "uuid",
   "female_id": "uuid",
   "paired_date": "date",
   "is_active": true,
-  "season_id": "uuid",
   "notes": "string",
   "created_at": "datetime"
 }
 ```
 
-### clutches
+### clutches (filtered by season_id)
 ```json
 {
   "id": "uuid",
+  "user_id": "uuid",
+  "season_id": "uuid",
   "pair_id": "uuid",
   "start_date": "date",
   "status": "laying|incubating|hatching|weaning|completed",
@@ -256,11 +300,16 @@ Build a canary breeding control/management web application with a local database
 - `/app/test_reports/iteration_2.json`
 - `/app/test_reports/iteration_4.json` - Season Management, Print Cards, Year Comparison tests (100% passed)
 - `/app/test_reports/iteration_5.json` - Tasks bug fix, Settings menu position, Backup/Restore (100% passed)
+- `/app/test_reports/iteration_6.json` - Per-Season Data Isolation tests (100% passed - 16/16 backend tests)
 
-## Recent Changes (March 2025)
+## Recent Changes (December 2025)
+- ✅ **Per-Season Data Isolation** - Zones, Cages, Pairs, Clutches now strictly isolated per season
+  - Added season_id to Clutch model
+  - Updated create_pair, create_clutch endpoints to use active season_id
+  - Updated get_pairs, get_clutches, get_zones, get_cages endpoints with strict season filtering
+  - Updated dashboard stats to reflect active season data
+  - Birds remain GLOBAL (accessible across all seasons)
+  - Test file: /app/backend/tests/test_season_data_isolation.py
 - ✅ Fixed Tasks page bug - completing one task no longer removes all tasks
 - ✅ Moved Settings menu to bottom of sidebar with visual separator
 - ✅ Implemented Backup & Restore functionality in Settings page
-  - Download full database backup as JSON
-  - Restore from JSON backup file with confirmation dialog
-  - Warning message about data replacement
