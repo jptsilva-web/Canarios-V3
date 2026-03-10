@@ -939,10 +939,12 @@ async def get_season_birds(current_user: dict = Depends(get_current_user)):
         # No active season - return empty
         return []
     
-    # Get bird IDs associated with this season
+    # Get bird IDs associated with this season (include legacy data without user_id)
     season_bird_docs = await db.season_birds.find({
-        "user_id": current_user["id"],
-        "season_id": active_season_id
+        "$and": [
+            {"season_id": active_season_id},
+            {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+        ]
     }, {"_id": 0}).to_list(1000)
     
     bird_ids = [sb["bird_id"] for sb in season_bird_docs]
@@ -971,10 +973,12 @@ async def get_available_birds_to_import(current_user: dict = Depends(get_current
     if not active_season_id:
         return all_birds
     
-    # Get bird IDs already in this season
+    # Get bird IDs already in this season (include legacy data without user_id)
     season_bird_docs = await db.season_birds.find({
-        "user_id": current_user["id"],
-        "season_id": active_season_id
+        "$and": [
+            {"season_id": active_season_id},
+            {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+        ]
     }, {"_id": 0}).to_list(1000)
     
     imported_bird_ids = set(sb["bird_id"] for sb in season_bird_docs)
