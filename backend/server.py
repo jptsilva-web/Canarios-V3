@@ -531,7 +531,7 @@ async def forgot_password(input: ForgotPasswordRequest, background_tasks: Backgr
     else:
         logging.warning("SMTP not configured - password reset email not sent")
     
-    return {"message": "If the email exists, a reset link will be sent", "token_preview": reset_token[:8].upper()}
+    return {"message": "If the email exists, a reset link will be sent"}
 
 @api_router.post("/auth/reset-password")
 async def reset_password(input: ResetPasswordRequest):

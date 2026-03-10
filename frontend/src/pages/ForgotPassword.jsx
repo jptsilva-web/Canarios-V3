@@ -21,15 +21,13 @@ export const ForgotPassword = () => {
   const [token, setToken] = useState(searchParams.get('token') || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [tokenPreview, setTokenPreview] = useState('');
 
   const handleSendEmail = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await forgotPassword(email);
-      setTokenPreview(response.token_preview);
+      await forgotPassword(email);
       setStep('token');
       toast.success(t('auth.resetEmailSent') || 'Email de recuperação enviado!');
     } catch (error) {
@@ -148,12 +146,6 @@ export const ForgotPassword = () => {
                 <CardDescription className="text-slate-400">
                   {t('auth.checkEmailForCode') || 'Verifique o seu email e introduza o código de recuperação'}
                 </CardDescription>
-                {tokenPreview && (
-                  <div className="mt-4 p-3 bg-[#FFC300]/10 rounded-lg border border-[#FFC300]/30">
-                    <p className="text-sm text-slate-400">Código enviado:</p>
-                    <p className="text-2xl font-mono font-bold text-[#FFC300]">{tokenPreview}</p>
-                  </div>
-                )}
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleResetPassword} className="space-y-4">
