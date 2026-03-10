@@ -1564,6 +1564,229 @@ async def remove_from_history(task_id: str, current_user: dict = Depends(get_cur
         raise HTTPException(status_code=404, detail="Task not found in history")
     return {"message": "Task removed from history"}
 
+# ============ DAILY EMAIL REPORT ============
+@api_router.post("/dashboard/send-daily-report")
+async def send_daily_report(background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
+    """Send daily task report via email"""
+    # Get tasks for today
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    active_season_id = await get_active_season_id(current_user["id"])
+    user_filter = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    
+    if active_season_id:
+        season_filter = {
+            "$and": [
+                user_filter,
+                {"season_id": active_season_id}
+            ]
+        }
+    else:
+        season_filter = user_filter
+    
+    # Get all active clutches
+    clutches = await db.clutches.find({**season_filter, "status": {"$ne": ClutchStatus.COMPLETED}}, {"_id": 0}).to_list(1000)
+    
+    tasks = []
+    for clutch in clutches:
+        pair = await db.pairs.find_one({"id": clutch["pair_id"]}, {"_id": 0})
+        cage = await db.cages.find_one({"id": pair["cage_id"]}, {"_id": 0}) if pair else None
+        
+        pair_name = pair.get("name") if pair else "Unknown"
+        cage_label = cage.get("label") if cage else "Unknown"
+        clutch_status = clutch.get("status", "")
+        eggs = clutch.get("eggs", [])
+        hatched_eggs = [e for e in eggs if e.get("status") == "hatched"]
+        banded_eggs = [e for e in eggs if e.get("banded_date")]
+        
+        # HATCHING task
+        if clutch.get("expected_hatch_date") and clutch_status == ClutchStatus.INCUBATING:
+            tasks.append({
+                "type": "Hatching",
+                "pair_name": pair_name,
+                "cage_label": cage_label,
+                "due_date": clutch["expected_hatch_date"],
+                "details": f"Expected hatching - {len(eggs)} eggs"
+            })
+        
+        # BANDING task
+        if clutch.get("expected_band_date") and clutch_status == ClutchStatus.HATCHING:
+            unbanded_hatched = len(hatched_eggs) - len(banded_eggs)
+            if unbanded_hatched > 0:
+                tasks.append({
+                    "type": "Banding",
+                    "pair_name": pair_name,
+                    "cage_label": cage_label,
+                    "due_date": clutch["expected_band_date"],
+                    "details": f"Banding due - {unbanded_hatched} chicks"
+                })
+        
+        # WEANING task
+        if clutch.get("expected_wean_date") and clutch_status == ClutchStatus.WEANING:
+            tasks.append({
+                "type": "Weaning",
+                "pair_name": pair_name,
+                "cage_label": cage_label,
+                "due_date": clutch["expected_wean_date"],
+                "details": f"Weaning due - {len(banded_eggs)} chicks"
+            })
+        
+        # Current status tasks
+        if clutch_status == ClutchStatus.LAYING:
+            tasks.append({
+                "type": "Laying",
+                "pair_name": pair_name,
+                "cage_label": cage_label,
+                "due_date": today,
+                "details": f"Currently laying - {len(eggs)} eggs"
+            })
+        elif clutch_status == ClutchStatus.INCUBATING:
+            tasks.append({
+                "type": "Incubation",
+                "pair_name": pair_name,
+                "cage_label": cage_label,
+                "due_date": clutch.get("expected_hatch_date", today),
+                "details": f"Incubating - {len(eggs)} eggs"
+            })
+    
+    # Also get manual tasks
+    manual_tasks = await db.manual_tasks.find({
+        "completed": {"$ne": True},
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0}).to_list(100)
+    
+    for mt in manual_tasks:
+        tasks.append({
+            "type": "Manual",
+            "pair_name": mt.get("title", ""),
+            "cage_label": "",
+            "due_date": mt.get("due_date", today),
+            "details": mt.get("description", "")
+        })
+    
+    # Sort tasks by due date
+    tasks.sort(key=lambda x: x["due_date"])
+    
+    # Filter for today and overdue
+    def parse_date(d):
+        try:
+            return datetime.strptime(d, "%Y-%m-%d").date()
+        except:
+            return None
+    
+    today_date = datetime.now(timezone.utc).date()
+    today_tasks = [t for t in tasks if parse_date(t["due_date"]) == today_date]
+    overdue_tasks = [t for t in tasks if parse_date(t["due_date"]) and parse_date(t["due_date"]) < today_date]
+    upcoming_tasks = [t for t in tasks if parse_date(t["due_date"]) and parse_date(t["due_date"]) > today_date][:10]  # Next 10
+    
+    # Build email content
+    email_body = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; background-color: #1A2035; color: #ffffff; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; background-color: #202940; border-radius: 10px; padding: 20px; }}
+            h1 {{ color: #FFC300; }}
+            h2 {{ color: #00BFA6; border-bottom: 1px solid #333; padding-bottom: 10px; }}
+            .task {{ background-color: #1A2035; border-radius: 8px; padding: 15px; margin: 10px 0; border-left: 4px solid #FFC300; }}
+            .task-type {{ color: #FFC300; font-weight: bold; text-transform: uppercase; font-size: 12px; }}
+            .task-pair {{ color: #ffffff; font-size: 16px; margin: 5px 0; }}
+            .task-details {{ color: #94a3b8; font-size: 14px; }}
+            .overdue {{ border-left-color: #E91E63 !important; }}
+            .overdue .task-type {{ color: #E91E63; }}
+            .empty {{ color: #64748b; text-align: center; padding: 20px; }}
+            .footer {{ text-align: center; color: #64748b; font-size: 12px; margin-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🐤 OrniTuga - Daily Task Report</h1>
+            <p style="color: #94a3b8;">Report for {today}</p>
+            
+            <h2>⚠️ Overdue ({len(overdue_tasks)})</h2>
+    """
+    
+    if overdue_tasks:
+        for t in overdue_tasks:
+            email_body += f"""
+            <div class="task overdue">
+                <div class="task-type">{t['type']}</div>
+                <div class="task-pair">{t['pair_name']} - {t['cage_label']}</div>
+                <div class="task-details">{t['details']} | Due: {t['due_date']}</div>
+            </div>
+            """
+    else:
+        email_body += '<p class="empty">No overdue tasks</p>'
+    
+    email_body += f"""
+            <h2>📅 Today ({len(today_tasks)})</h2>
+    """
+    
+    if today_tasks:
+        for t in today_tasks:
+            email_body += f"""
+            <div class="task">
+                <div class="task-type">{t['type']}</div>
+                <div class="task-pair">{t['pair_name']} - {t['cage_label']}</div>
+                <div class="task-details">{t['details']}</div>
+            </div>
+            """
+    else:
+        email_body += '<p class="empty">No tasks for today</p>'
+    
+    email_body += f"""
+            <h2>📆 Upcoming ({len(upcoming_tasks)})</h2>
+    """
+    
+    if upcoming_tasks:
+        for t in upcoming_tasks:
+            email_body += f"""
+            <div class="task">
+                <div class="task-type">{t['type']}</div>
+                <div class="task-pair">{t['pair_name']} - {t['cage_label']}</div>
+                <div class="task-details">{t['details']} | Due: {t['due_date']}</div>
+            </div>
+            """
+    else:
+        email_body += '<p class="empty">No upcoming tasks</p>'
+    
+    email_body += """
+            <div class="footer">
+                <p>OrniTuga - Canary Breeding Management</p>
+                <p>This is an automated daily report.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Get SMTP settings
+    email_settings = await db.settings.find_one({"type": "email"}, {"_id": 0})
+    smtp_email = email_settings.get("smtp_email") if email_settings else SMTP_EMAIL
+    smtp_password = email_settings.get("smtp_password") if email_settings else SMTP_PASSWORD
+    
+    if not smtp_email or not smtp_password:
+        raise HTTPException(status_code=400, detail="Email settings not configured. Please configure SMTP in Settings.")
+    
+    # Send email
+    background_tasks.add_task(
+        send_email_notification,
+        current_user["email"],
+        f"OrniTuga - Daily Task Report ({today})",
+        email_body,
+        smtp_email,
+        smtp_password
+    )
+    
+    return {
+        "message": "Daily report sent",
+        "recipient": current_user["email"],
+        "tasks_count": {
+            "overdue": len(overdue_tasks),
+            "today": len(today_tasks),
+            "upcoming": len(upcoming_tasks)
+        }
+    }
+
 # ============ BREEDING STATISTICS API ============
 class BreedingStats(BaseModel):
     total_eggs: int = 0
@@ -2092,6 +2315,17 @@ async def get_seasons(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/seasons", response_model=Season)
 async def create_season(input: SeasonCreate, current_user: dict = Depends(get_current_user)):
+    # Check if a season with this year already exists for this user
+    existing_season = await db.seasons.find_one({
+        "year": input.year,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
+    if existing_season:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"A season for year {input.year} already exists. Each year must be unique."
+        )
+    
     # If this season is set as active, deactivate all others for this user
     if input.is_active:
         await db.seasons.update_many({

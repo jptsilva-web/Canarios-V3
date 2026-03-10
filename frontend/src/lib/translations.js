@@ -362,6 +362,9 @@ export const translations = {
       noHistory: 'Nenhuma tarefa concluída',
       completedAt: 'Concluído em',
       removedFromHistory: 'Removido do histórico',
+      sendReport: 'Enviar Relatório',
+      reportSent: 'Relatório enviado com sucesso!',
+      reportError: 'Erro ao enviar relatório. Verifique as configurações de email.',
     },
     // Newborn
     newborn: {
@@ -885,6 +888,9 @@ export const translations = {
       noHistory: 'No completed tasks',
       completedAt: 'Completed at',
       removedFromHistory: 'Removed from history',
+      sendReport: 'Send Report',
+      reportSent: 'Report sent successfully!',
+      reportError: 'Error sending report. Check email settings.',
     },
     // Newborn
     newborn: {

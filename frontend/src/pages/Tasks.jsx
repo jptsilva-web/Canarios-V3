@@ -7,7 +7,9 @@ import {
   CheckCircle,
   History,
   Clock,
-  Trash2
+  Trash2,
+  Mail,
+  Send
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -138,6 +140,7 @@ export const Tasks = () => {
   const [taskHistory, setTaskHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [sendingReport, setSendingReport] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -156,6 +159,19 @@ export const Tasks = () => {
       setTaskHistory(res.data);
     } catch (error) {
       console.error('Error fetching task history:', error);
+    }
+  };
+
+  const handleSendDailyReport = async () => {
+    setSendingReport(true);
+    try {
+      const res = await dashboardApi.sendDailyReport();
+      toast.success(t('tasks.reportSent') || `Relatório enviado para ${res.data.recipient}`);
+    } catch (error) {
+      console.error('Error sending report:', error);
+      toast.error(error.response?.data?.detail || t('tasks.reportError') || 'Erro ao enviar relatório');
+    } finally {
+      setSendingReport(false);
     }
   };
 
@@ -247,19 +263,35 @@ export const Tasks = () => {
             {tasks.length} {t('tasks.activeTasks') || 'tarefas ativas'}
           </p>
         </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-full sm:w-48 bg-[#202940] border-white/10 text-white" data-testid="type-filter">
-            <Filter size={16} className="mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#202940] border-white/10">
-            {taskTypes.map((type) => (
-              <SelectItem key={type} value={type} className="text-white hover:bg-[#1A2035] capitalize">
-                {type === 'all' ? t('common.all') : type}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="border-[#00BFA6] text-[#00BFA6] hover:bg-[#00BFA6]/10"
+            onClick={handleSendDailyReport}
+            disabled={sendingReport}
+            data-testid="send-report-btn"
+          >
+            {sendingReport ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#00BFA6] mr-2" />
+            ) : (
+              <Mail size={16} className="mr-2" />
+            )}
+            {t('tasks.sendReport') || 'Enviar Relatório'}
+          </Button>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-48 bg-[#202940] border-white/10 text-white" data-testid="type-filter">
+              <Filter size={16} className="mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-[#202940] border-white/10">
+              {taskTypes.map((type) => (
+                <SelectItem key={type} value={type} className="text-white hover:bg-[#1A2035] capitalize">
+                  {type === 'all' ? t('common.all') : type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Main content - 2 columns on large screens */}

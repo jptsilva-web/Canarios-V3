@@ -80,6 +80,7 @@ export const dashboardApi = {
   getTaskHistory: () => api.get('/dashboard/task-history'),
   addTaskToHistory: (task) => api.post('/dashboard/task-history', task),
   removeFromHistory: (taskId) => api.delete(`/dashboard/task-history/${taskId}`),
+  sendDailyReport: () => api.post('/dashboard/send-daily-report'),
 };
 
 // Reports API
