@@ -243,6 +243,7 @@ export const Birds = () => {
   const [availableBirds, setAvailableBirds] = useState([]);
   const [selectedBirdsToImport, setSelectedBirdsToImport] = useState([]);
   const [importLoading, setImportLoading] = useState(false);
+  const [importSearchQuery, setImportSearchQuery] = useState('');
 
   // Default year is previous year
   const defaultYear = new Date().getFullYear() - 1;
@@ -326,8 +327,21 @@ export const Birds = () => {
   const openImportDialog = () => {
     fetchAvailableBirds();
     setSelectedBirdsToImport([]);
+    setImportSearchQuery('');
     setImportDialogOpen(true);
   };
+
+  // Filter available birds by search query
+  const filteredAvailableBirds = availableBirds.filter(bird => {
+    if (!importSearchQuery) return true;
+    const query = importSearchQuery.toLowerCase();
+    return (
+      bird.band_number?.toLowerCase().includes(query) ||
+      bird.stam?.toLowerCase().includes(query) ||
+      bird.gender?.toLowerCase().includes(query) ||
+      bird.band_year?.toString().includes(query)
+    );
+  });
 
   const fetchSavedStams = async () => {
     try {
@@ -678,27 +692,48 @@ export const Birds = () => {
                 </div>
               ) : (
                 <>
+                  {/* Search bar */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+                    <Input
+                      placeholder={t('birds.searchToImport') || 'Pesquisar por anilha, STAM, género...'}
+                      value={importSearchQuery}
+                      onChange={(e) => setImportSearchQuery(e.target.value)}
+                      className="pl-10 bg-[#1A2035] border-white/10 text-white placeholder:text-slate-500"
+                      data-testid="import-search-input"
+                    />
+                    {importSearchQuery && (
+                      <button
+                        onClick={() => setImportSearchQuery('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                  
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-400">
                       {selectedBirdsToImport.length} {t('birds.selected') || 'selecionadas'}
+                      {importSearchQuery && ` (${filteredAvailableBirds.length} ${t('birds.filtered') || 'filtradas'})`}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedBirdsToImport(
-                        selectedBirdsToImport.length === availableBirds.length 
+                        selectedBirdsToImport.length === filteredAvailableBirds.length 
                           ? [] 
-                          : availableBirds.map(b => b.id)
+                          : filteredAvailableBirds.map(b => b.id)
                       )}
                       className="text-[#00BFA6] hover:text-[#00BFA6]/80"
                     >
-                      {selectedBirdsToImport.length === availableBirds.length 
+                      {selectedBirdsToImport.length === filteredAvailableBirds.length && filteredAvailableBirds.length > 0
                         ? (t('birds.deselectAll') || 'Desselecionar Todas')
                         : (t('birds.selectAll') || 'Selecionar Todas')}
                     </Button>
                   </div>
                   
-                  <div className="max-h-[400px] overflow-y-auto border border-white/10 rounded-lg">
+                  <div className="max-h-[350px] overflow-y-auto border border-white/10 rounded-lg">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-white/10 hover:bg-transparent">
@@ -710,7 +745,14 @@ export const Birds = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {availableBirds.map((bird) => (
+                        {filteredAvailableBirds.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-slate-400">
+                              {t('birds.noSearchResults') || 'Nenhuma ave encontrada'}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                        filteredAvailableBirds.map((bird) => (
                           <TableRow 
                             key={bird.id}
                             className={cn(
@@ -747,7 +789,8 @@ export const Birds = () => {
                             </TableCell>
                             <TableCell className="text-slate-300">{bird.stam || '-'}</TableCell>
                           </TableRow>
-                        ))}
+                        ))
+                        )}
                       </TableBody>
                     </Table>
                   </div>
