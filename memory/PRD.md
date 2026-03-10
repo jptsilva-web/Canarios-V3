@@ -31,13 +31,17 @@ Build a canary breeding control/management web application with a local database
 - Backup & Restore functionality
 
 ## What's Been Implemented (March 2025)
-- ✅ **User Authentication System**
+- ✅ **User Authentication System** (COMPLETED)
   - Login page with email/password
   - Register page for new users
   - Password recovery via email (Gmail SMTP)
-  - JWT tokens for session management
+  - JWT tokens (7 days validity) for session management
   - Protected routes - requires login to access app
   - User info displayed in sidebar with logout button
+- ✅ **Multi-User Data Isolation** (COMPLETED)
+  - All endpoints filter by user_id
+  - New data automatically associated with logged-in user
+  - Legacy data (without user_id) visible to all users for backward compatibility
 - ✅ Full-stack application with React + FastAPI + MongoDB
 - ✅ Dashboard with stats cards and task preview
 - ✅ Bird registry with CRUD, search, gender filter, and **parent selection for genealogy**

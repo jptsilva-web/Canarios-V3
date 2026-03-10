@@ -647,27 +647,36 @@ async def complete_manual_task(task_id: str):
 
 # ============ ZONES API ============
 @api_router.post("/zones", response_model=Zone)
-async def create_zone(input: ZoneCreate):
-    zone = Zone(**input.model_dump())
+async def create_zone(input: ZoneCreate, current_user: dict = Depends(get_current_user)):
+    zone = Zone(**input.model_dump(), user_id=current_user["id"])
     doc = zone.model_dump()
     await db.zones.insert_one(doc)
     return zone
 
 @api_router.get("/zones", response_model=List[Zone])
-async def get_zones():
-    zones = await db.zones.find({}, {"_id": 0}).to_list(1000)
+async def get_zones(current_user: dict = Depends(get_current_user)):
+    zones = await db.zones.find(
+        {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]},
+        {"_id": 0}
+    ).to_list(1000)
     return zones
 
 @api_router.get("/zones/{zone_id}", response_model=Zone)
-async def get_zone(zone_id: str):
-    zone = await db.zones.find_one({"id": zone_id}, {"_id": 0})
+async def get_zone(zone_id: str, current_user: dict = Depends(get_current_user)):
+    zone = await db.zones.find_one({
+        "id": zone_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not zone:
         raise HTTPException(status_code=404, detail="Zone not found")
     return zone
 
 @api_router.delete("/zones/{zone_id}")
-async def delete_zone(zone_id: str):
-    result = await db.zones.delete_one({"id": zone_id})
+async def delete_zone(zone_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.zones.delete_one({
+        "id": zone_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Zone not found")
     # Delete associated cages
@@ -675,8 +684,11 @@ async def delete_zone(zone_id: str):
     return {"message": "Zone deleted"}
 
 @api_router.post("/zones/{zone_id}/generate-cages")
-async def generate_cages(zone_id: str):
-    zone = await db.zones.find_one({"id": zone_id}, {"_id": 0})
+async def generate_cages(zone_id: str, current_user: dict = Depends(get_current_user)):
+    zone = await db.zones.find_one({
+        "id": zone_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not zone:
         raise HTTPException(status_code=404, detail="Zone not found")
     
@@ -692,7 +704,8 @@ async def generate_cages(zone_id: str):
                 zone_id=zone_id,
                 row=row,
                 column=col,
-                label=f"{cage_number}"
+                label=f"{cage_number}",
+                user_id=current_user["id"]
             )
             cages.append(cage.model_dump())
             cage_number += 1
@@ -704,30 +717,34 @@ async def generate_cages(zone_id: str):
 
 # ============ CAGES API ============
 @api_router.get("/cages", response_model=List[Cage])
-async def get_cages(zone_id: Optional[str] = None):
-    query = {}
+async def get_cages(zone_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
     if zone_id:
         query["zone_id"] = zone_id
     cages = await db.cages.find(query, {"_id": 0}).to_list(1000)
     return cages
 
 @api_router.get("/cages/{cage_id}", response_model=Cage)
-async def get_cage(cage_id: str):
-    cage = await db.cages.find_one({"id": cage_id}, {"_id": 0})
+async def get_cage(cage_id: str, current_user: dict = Depends(get_current_user)):
+    cage = await db.cages.find_one({
+        "id": cage_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not cage:
         raise HTTPException(status_code=404, detail="Cage not found")
     return cage
 
 # ============ BIRDS API ============
 @api_router.post("/birds", response_model=Bird)
-async def create_bird(input: BirdCreate):
-    # Validate: birds with same band_number + band_year + gender + stam = duplicate
+async def create_bird(input: BirdCreate, current_user: dict = Depends(get_current_user)):
+    # Validate: birds with same band_number + band_year + gender + stam = duplicate for this user
     if input.stam:
         existing = await db.birds.find_one({
             "band_number": input.band_number,
             "band_year": input.band_year,
             "gender": input.gender,
-            "stam": input.stam
+            "stam": input.stam,
+            "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
         }, {"_id": 0})
         if existing:
             raise HTTPException(
@@ -735,16 +752,19 @@ async def create_bird(input: BirdCreate):
                 detail=f"A bird with band {input.band_number}, year {input.band_year}, gender {input.gender}, and STAM {input.stam} already exists"
             )
     
-    bird = Bird(**input.model_dump())
+    bird = Bird(**input.model_dump(), user_id=current_user["id"])
     doc = bird.model_dump()
     await db.birds.insert_one(doc)
     return bird
 
 @api_router.get("/birds/stams", response_model=List[str])
-async def get_unique_stams():
+async def get_unique_stams(current_user: dict = Depends(get_current_user)):
     """Get all unique STAM values for auto-suggest"""
     pipeline = [
-        {"$match": {"stam": {"$ne": None, "$ne": ""}}},
+        {"$match": {
+            "stam": {"$ne": None, "$ne": ""},
+            "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+        }},
         {"$group": {"_id": "$stam"}},
         {"$sort": {"_id": 1}}
     ]
@@ -752,23 +772,29 @@ async def get_unique_stams():
     return [r["_id"] for r in results]
 
 @api_router.get("/birds", response_model=List[Bird])
-async def get_birds(gender: Optional[BirdGender] = None):
-    query = {}
+async def get_birds(gender: Optional[BirdGender] = None, current_user: dict = Depends(get_current_user)):
+    query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
     if gender:
         query["gender"] = gender
     birds = await db.birds.find(query, {"_id": 0}).to_list(1000)
     return birds
 
 @api_router.get("/birds/{bird_id}", response_model=Bird)
-async def get_bird(bird_id: str):
-    bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
+async def get_bird(bird_id: str, current_user: dict = Depends(get_current_user)):
+    bird = await db.birds.find_one({
+        "id": bird_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not bird:
         raise HTTPException(status_code=404, detail="Bird not found")
     return bird
 
 @api_router.put("/birds/{bird_id}", response_model=Bird)
-async def update_bird(bird_id: str, input: BirdCreate):
-    bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
+async def update_bird(bird_id: str, input: BirdCreate, current_user: dict = Depends(get_current_user)):
+    bird = await db.birds.find_one({
+        "id": bird_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not bird:
         raise HTTPException(status_code=404, detail="Bird not found")
     
@@ -779,7 +805,8 @@ async def update_bird(bird_id: str, input: BirdCreate):
             "band_year": input.band_year,
             "gender": input.gender,
             "stam": input.stam,
-            "id": {"$ne": bird_id}
+            "id": {"$ne": bird_id},
+            "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
         }, {"_id": 0})
         if existing:
             raise HTTPException(
@@ -799,8 +826,11 @@ class BirdPartialUpdate(BaseModel):
     notes: Optional[str] = None
 
 @api_router.patch("/birds/{bird_id}", response_model=Bird)
-async def partial_update_bird(bird_id: str, input: BirdPartialUpdate):
-    bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
+async def partial_update_bird(bird_id: str, input: BirdPartialUpdate, current_user: dict = Depends(get_current_user)):
+    bird = await db.birds.find_one({
+        "id": bird_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not bird:
         raise HTTPException(status_code=404, detail="Bird not found")
     
@@ -814,38 +844,47 @@ async def partial_update_bird(bird_id: str, input: BirdPartialUpdate):
     return updated_bird
 
 @api_router.delete("/birds/{bird_id}")
-async def delete_bird(bird_id: str):
-    result = await db.birds.delete_one({"id": bird_id})
+async def delete_bird(bird_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.birds.delete_one({
+        "id": bird_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Bird not found")
     return {"message": "Bird deleted"}
 
 # ============ PAIRS API ============
 @api_router.post("/pairs", response_model=Pair)
-async def create_pair(input: PairCreate):
-    pair = Pair(**input.model_dump())
+async def create_pair(input: PairCreate, current_user: dict = Depends(get_current_user)):
+    pair = Pair(**input.model_dump(), user_id=current_user["id"])
     doc = pair.model_dump()
     await db.pairs.insert_one(doc)
     return pair
 
 @api_router.get("/pairs", response_model=List[Pair])
-async def get_pairs(active_only: bool = False):
-    query = {}
+async def get_pairs(active_only: bool = False, current_user: dict = Depends(get_current_user)):
+    query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
     if active_only:
         query["is_active"] = True
     pairs = await db.pairs.find(query, {"_id": 0}).to_list(1000)
     return pairs
 
 @api_router.get("/pairs/{pair_id}", response_model=Pair)
-async def get_pair(pair_id: str):
-    pair = await db.pairs.find_one({"id": pair_id}, {"_id": 0})
+async def get_pair(pair_id: str, current_user: dict = Depends(get_current_user)):
+    pair = await db.pairs.find_one({
+        "id": pair_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not pair:
         raise HTTPException(status_code=404, detail="Pair not found")
     return pair
 
 @api_router.put("/pairs/{pair_id}", response_model=Pair)
-async def update_pair(pair_id: str, input: PairUpdate):
-    pair = await db.pairs.find_one({"id": pair_id}, {"_id": 0})
+async def update_pair(pair_id: str, input: PairUpdate, current_user: dict = Depends(get_current_user)):
+    pair = await db.pairs.find_one({
+        "id": pair_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not pair:
         raise HTTPException(status_code=404, detail="Pair not found")
     
@@ -857,28 +896,32 @@ async def update_pair(pair_id: str, input: PairUpdate):
     return updated_pair
 
 @api_router.delete("/pairs/{pair_id}")
-async def delete_pair(pair_id: str):
-    result = await db.pairs.delete_one({"id": pair_id})
+async def delete_pair(pair_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.pairs.delete_one({
+        "id": pair_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Pair not found")
     return {"message": "Pair deleted"}
 
 # ============ CLUTCHES API ============
 @api_router.post("/clutches", response_model=Clutch)
-async def create_clutch(input: ClutchCreate):
+async def create_clutch(input: ClutchCreate, current_user: dict = Depends(get_current_user)):
     start_date = input.start_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     clutch = Clutch(
         pair_id=input.pair_id,
         start_date=start_date,
-        notes=input.notes
+        notes=input.notes,
+        user_id=current_user["id"]
     )
     doc = clutch.model_dump()
     await db.clutches.insert_one(doc)
     return clutch
 
 @api_router.get("/clutches", response_model=List[Clutch])
-async def get_clutches(pair_id: Optional[str] = None, status: Optional[ClutchStatus] = None):
-    query = {}
+async def get_clutches(pair_id: Optional[str] = None, status: Optional[ClutchStatus] = None, current_user: dict = Depends(get_current_user)):
+    query = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
     if pair_id:
         query["pair_id"] = pair_id
     if status:
@@ -887,15 +930,21 @@ async def get_clutches(pair_id: Optional[str] = None, status: Optional[ClutchSta
     return clutches
 
 @api_router.get("/clutches/{clutch_id}", response_model=Clutch)
-async def get_clutch(clutch_id: str):
-    clutch = await db.clutches.find_one({"id": clutch_id}, {"_id": 0})
+async def get_clutch(clutch_id: str, current_user: dict = Depends(get_current_user)):
+    clutch = await db.clutches.find_one({
+        "id": clutch_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not clutch:
         raise HTTPException(status_code=404, detail="Clutch not found")
     return clutch
 
 @api_router.put("/clutches/{clutch_id}", response_model=Clutch)
-async def update_clutch(clutch_id: str, input: ClutchUpdate):
-    clutch = await db.clutches.find_one({"id": clutch_id}, {"_id": 0})
+async def update_clutch(clutch_id: str, input: ClutchUpdate, current_user: dict = Depends(get_current_user)):
+    clutch = await db.clutches.find_one({
+        "id": clutch_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not clutch:
         raise HTTPException(status_code=404, detail="Clutch not found")
     
@@ -915,8 +964,11 @@ async def update_clutch(clutch_id: str, input: ClutchUpdate):
     return updated_clutch
 
 @api_router.post("/clutches/{clutch_id}/eggs", response_model=Clutch)
-async def add_egg(clutch_id: str, input: AddEggRequest):
-    clutch = await db.clutches.find_one({"id": clutch_id}, {"_id": 0})
+async def add_egg(clutch_id: str, input: AddEggRequest, current_user: dict = Depends(get_current_user)):
+    clutch = await db.clutches.find_one({
+        "id": clutch_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not clutch:
         raise HTTPException(status_code=404, detail="Clutch not found")
     
@@ -931,8 +983,11 @@ async def add_egg(clutch_id: str, input: AddEggRequest):
     return updated_clutch
 
 @api_router.put("/clutches/{clutch_id}/eggs/{egg_id}", response_model=Clutch)
-async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest):
-    clutch = await db.clutches.find_one({"id": clutch_id}, {"_id": 0})
+async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest, current_user: dict = Depends(get_current_user)):
+    clutch = await db.clutches.find_one({
+        "id": clutch_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not clutch:
         raise HTTPException(status_code=404, detail="Clutch not found")
     
@@ -986,6 +1041,7 @@ async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest):
                 birth_date=egg_data.get("hatched_date"),
                 parent_male_id=pair.get("male_id") if pair else None,
                 parent_female_id=pair.get("female_id") if pair else None,
+                user_id=current_user["id"]
             )
             await db.birds.insert_one(new_bird.model_dump())
             logging.info(f"Auto-created bird record for banded chick: {input.band_number}")
@@ -1002,17 +1058,22 @@ async def update_egg(clutch_id: str, egg_id: str, input: UpdateEggRequest):
     return updated_clutch
 
 @api_router.delete("/clutches/{clutch_id}")
-async def delete_clutch(clutch_id: str):
-    result = await db.clutches.delete_one({"id": clutch_id})
+async def delete_clutch(clutch_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.clutches.delete_one({
+        "id": clutch_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Clutch not found")
     return {"message": "Clutch deleted"}
 
 # Migrate existing banded eggs to birds collection
 @api_router.post("/migrate-banded-eggs")
-async def migrate_banded_eggs():
+async def migrate_banded_eggs(current_user: dict = Depends(get_current_user)):
     """One-time migration to create bird records for existing banded eggs"""
-    clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+    clutches = await db.clutches.find({
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0}).to_list(10000)
     migrated = 0
     
     for clutch in clutches:
@@ -1033,6 +1094,7 @@ async def migrate_banded_eggs():
                         birth_date=egg.get("hatched_date"),
                         parent_male_id=pair.get("male_id") if pair else None,
                         parent_female_id=pair.get("female_id") if pair else None,
+                        user_id=current_user["id"]
                     )
                     await db.birds.insert_one(new_bird.model_dump())
                     migrated += 1
@@ -1041,27 +1103,35 @@ async def migrate_banded_eggs():
 
 # ============ CONTACTS API ============
 @api_router.post("/contacts", response_model=Contact)
-async def create_contact(input: ContactCreate):
-    contact = Contact(**input.model_dump())
+async def create_contact(input: ContactCreate, current_user: dict = Depends(get_current_user)):
+    contact = Contact(**input.model_dump(), user_id=current_user["id"])
     doc = contact.model_dump()
     await db.contacts.insert_one(doc)
     return contact
 
 @api_router.get("/contacts", response_model=List[Contact])
-async def get_contacts():
-    contacts = await db.contacts.find({}, {"_id": 0}).to_list(1000)
+async def get_contacts(current_user: dict = Depends(get_current_user)):
+    contacts = await db.contacts.find({
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0}).to_list(1000)
     return contacts
 
 @api_router.get("/contacts/{contact_id}", response_model=Contact)
-async def get_contact(contact_id: str):
-    contact = await db.contacts.find_one({"id": contact_id}, {"_id": 0})
+async def get_contact(contact_id: str, current_user: dict = Depends(get_current_user)):
+    contact = await db.contacts.find_one({
+        "id": contact_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     return contact
 
 @api_router.put("/contacts/{contact_id}", response_model=Contact)
-async def update_contact(contact_id: str, input: ContactCreate):
-    contact = await db.contacts.find_one({"id": contact_id}, {"_id": 0})
+async def update_contact(contact_id: str, input: ContactCreate, current_user: dict = Depends(get_current_user)):
+    contact = await db.contacts.find_one({
+        "id": contact_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     
@@ -1071,22 +1141,26 @@ async def update_contact(contact_id: str, input: ContactCreate):
     return updated_contact
 
 @api_router.delete("/contacts/{contact_id}")
-async def delete_contact(contact_id: str):
-    result = await db.contacts.delete_one({"id": contact_id})
+async def delete_contact(contact_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.contacts.delete_one({
+        "id": contact_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
     return {"message": "Contact deleted"}
 
 # ============ DASHBOARD API ============
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
-async def get_dashboard_stats():
-    total_birds = await db.birds.count_documents({})
-    total_pairs = await db.pairs.count_documents({})
-    active_pairs = await db.pairs.count_documents({"is_active": True})
-    total_clutches = await db.clutches.count_documents({})
-    eggs_laying = await db.clutches.count_documents({"status": ClutchStatus.LAYING})
-    eggs_incubating = await db.clutches.count_documents({"status": ClutchStatus.INCUBATING})
-    chicks_hatching = await db.clutches.count_documents({"status": ClutchStatus.HATCHING})
+async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+    user_filter = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    total_birds = await db.birds.count_documents(user_filter)
+    total_pairs = await db.pairs.count_documents(user_filter)
+    active_pairs = await db.pairs.count_documents({**user_filter, "is_active": True})
+    total_clutches = await db.clutches.count_documents(user_filter)
+    eggs_laying = await db.clutches.count_documents({**user_filter, "status": ClutchStatus.LAYING})
+    eggs_incubating = await db.clutches.count_documents({**user_filter, "status": ClutchStatus.INCUBATING})
+    chicks_hatching = await db.clutches.count_documents({**user_filter, "status": ClutchStatus.HATCHING})
     
     return DashboardStats(
         total_birds=total_birds,
@@ -1099,12 +1173,13 @@ async def get_dashboard_stats():
     )
 
 @api_router.get("/dashboard/tasks", response_model=List[Task])
-async def get_tasks():
+async def get_tasks(current_user: dict = Depends(get_current_user)):
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     tasks = []
+    user_filter = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
     
-    # Get all active clutches
-    clutches = await db.clutches.find({"status": {"$ne": ClutchStatus.COMPLETED}}, {"_id": 0}).to_list(1000)
+    # Get all active clutches for this user
+    clutches = await db.clutches.find({**user_filter, "status": {"$ne": ClutchStatus.COMPLETED}}, {"_id": 0}).to_list(1000)
     
     for clutch in clutches:
         pair = await db.pairs.find_one({"id": clutch["pair_id"]}, {"_id": 0})
@@ -1693,25 +1768,32 @@ async def root():
 
 # ============ SEASONS API ============
 @api_router.get("/seasons", response_model=List[Season])
-async def get_seasons():
-    seasons = await db.seasons.find({}, {"_id": 0}).to_list(100)
+async def get_seasons(current_user: dict = Depends(get_current_user)):
+    seasons = await db.seasons.find({
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0}).to_list(100)
     return seasons
 
 @api_router.post("/seasons", response_model=Season)
-async def create_season(input: SeasonCreate):
-    # If this season is set as active, deactivate all others
+async def create_season(input: SeasonCreate, current_user: dict = Depends(get_current_user)):
+    # If this season is set as active, deactivate all others for this user
     if input.is_active:
-        await db.seasons.update_many({}, {"$set": {"is_active": False}})
+        await db.seasons.update_many({
+            "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+        }, {"$set": {"is_active": False}})
     
-    season = Season(**input.model_dump())
+    season = Season(**input.model_dump(), user_id=current_user["id"])
     await db.seasons.insert_one(season.model_dump())
     return season
 
 @api_router.put("/seasons/{season_id}", response_model=Season)
-async def update_season(season_id: str, input: SeasonCreate):
-    # If this season is set as active, deactivate all others
+async def update_season(season_id: str, input: SeasonCreate, current_user: dict = Depends(get_current_user)):
+    # If this season is set as active, deactivate all others for this user
     if input.is_active:
-        await db.seasons.update_many({"id": {"$ne": season_id}}, {"$set": {"is_active": False}})
+        await db.seasons.update_many({
+            "id": {"$ne": season_id},
+            "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+        }, {"$set": {"is_active": False}})
     
     await db.seasons.update_one(
         {"id": season_id},
@@ -1723,16 +1805,22 @@ async def update_season(season_id: str, input: SeasonCreate):
     return updated
 
 @api_router.delete("/seasons/{season_id}")
-async def delete_season(season_id: str):
-    result = await db.seasons.delete_one({"id": season_id})
+async def delete_season(season_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.seasons.delete_one({
+        "id": season_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Season not found")
     return {"message": "Season deleted"}
 
 @api_router.get("/seasons/active")
-async def get_active_season():
+async def get_active_season(current_user: dict = Depends(get_current_user)):
     """Get the currently active season"""
-    season = await db.seasons.find_one({"is_active": True}, {"_id": 0})
+    season = await db.seasons.find_one({
+        "is_active": True,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0})
     if not season:
         # Return current year as default if no active season
         current_year = datetime.now().year
@@ -1740,10 +1828,12 @@ async def get_active_season():
     return season
 
 @api_router.post("/seasons/{season_id}/activate")
-async def activate_season(season_id: str):
+async def activate_season(season_id: str, current_user: dict = Depends(get_current_user)):
     """Set a season as the active one"""
-    # Deactivate all seasons
-    await db.seasons.update_many({}, {"$set": {"is_active": False}})
+    # Deactivate all seasons for this user
+    await db.seasons.update_many({
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"$set": {"is_active": False}})
     # Activate the selected one
     result = await db.seasons.update_one({"id": season_id}, {"$set": {"is_active": True}})
     if result.matched_count == 0:
@@ -1752,15 +1842,16 @@ async def activate_season(season_id: str):
 
 # ============ YEAR-OVER-YEAR COMPARISON API ============
 @api_router.get("/reports/year-comparison")
-async def get_year_comparison(year1: int = None, year2: int = None):
+async def get_year_comparison(year1: int = None, year2: int = None, current_user: dict = Depends(get_current_user)):
     """Compare breeding statistics between two years"""
     current_year = datetime.now().year
     year1 = year1 or current_year - 1
     year2 = year2 or current_year
+    user_filter = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
     
     async def get_year_stats(year: int):
         # Get clutches for the year
-        clutches = await db.clutches.find({}, {"_id": 0}).to_list(10000)
+        clutches = await db.clutches.find(user_filter, {"_id": 0}).to_list(10000)
         year_clutches = [c for c in clutches if c.get("start_date", "").startswith(str(year))]
         
         total_eggs = 0
