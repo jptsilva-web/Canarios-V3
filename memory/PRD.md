@@ -160,12 +160,13 @@ Build a canary breeding control/management web application with a local database
 - [x] **Per-Season Data Isolation** (zones, cages, pairs, clutches isolated per season)
 
 ### P1 (High Priority)
-- [ ] Import birds from previous seasons (UI to select birds from other seasons)
+- [x] Import birds from previous seasons ✅ (Birds are global - already working)
 - [ ] Bird photo attachments
 - [ ] Advanced analytics dashboard
 
 ### P2 (Medium Priority)
 - [x] Multiple user support with authentication ✅ IMPLEMENTED
+- [x] Password recovery via email ✅ IMPLEMENTED
 - [ ] Mobile app version
 - [x] Data backup/restore functionality ✅ IMPLEMENTED
 
@@ -310,6 +311,15 @@ Build a canary breeding control/management web application with a local database
   - Updated dashboard stats to reflect active season data
   - Birds remain GLOBAL (accessible across all seasons)
   - Test file: /app/backend/tests/test_season_data_isolation.py
+- ✅ **Password Recovery** - Full implementation completed
+  - forgot-password endpoint sends email with 8-char recovery code
+  - reset-password endpoint validates token and updates password
+  - Full UI flow: email → code entry → new password → success
+  - Uses user's SMTP settings from Settings page
+- ✅ **Import Birds from Previous Seasons** - Already working!
+  - Birds are GLOBAL (not filtered by season_id)
+  - All 13 birds available in pair creation dropdowns regardless of active season
+  - No additional implementation needed - birds naturally available across seasons
 - ✅ Fixed Tasks page bug - completing one task no longer removes all tasks
 - ✅ Moved Settings menu to bottom of sidebar with visual separator
 - ✅ Implemented Backup & Restore functionality in Settings page

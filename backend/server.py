@@ -514,12 +514,22 @@ async def forgot_password(input: ForgotPasswordRequest, background_tasks: Backgr
     <p>Cumprimentos,<br>OrniTuga</p>
     """
     
-    background_tasks.add_task(
-        send_email,
-        user["email"],
-        "Recuperação de Password - OrniTuga",
-        email_body
-    )
+    # Get SMTP settings from database
+    email_settings = await db.settings.find_one({"type": "email"}, {"_id": 0})
+    smtp_email = email_settings.get("smtp_email") if email_settings else SMTP_EMAIL
+    smtp_password = email_settings.get("smtp_password") if email_settings else SMTP_PASSWORD
+    
+    if smtp_email and smtp_password:
+        background_tasks.add_task(
+            send_email_notification,
+            user["email"],
+            "Recuperação de Password - OrniTuga",
+            email_body,
+            smtp_email,
+            smtp_password
+        )
+    else:
+        logging.warning("SMTP not configured - password reset email not sent")
     
     return {"message": "If the email exists, a reset link will be sent", "token_preview": reset_token[:8].upper()}
 
