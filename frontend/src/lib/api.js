@@ -77,6 +77,9 @@ export const contactsApi = {
 export const dashboardApi = {
   getStats: () => api.get('/dashboard/stats'),
   getTasks: () => api.get('/dashboard/tasks'),
+  getTaskHistory: () => api.get('/dashboard/task-history'),
+  addTaskToHistory: (task) => api.post('/dashboard/task-history', task),
+  removeFromHistory: (taskId) => api.delete(`/dashboard/task-history/${taskId}`),
 };
 
 // Reports API

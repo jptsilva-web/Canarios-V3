@@ -357,6 +357,11 @@ export const translations = {
       markComplete: 'Marcar como Concluída',
       taskCompleted: 'Tarefa concluída',
       urgent: 'Urgente',
+      activeTasks: 'tarefas ativas',
+      history: 'Histórico',
+      noHistory: 'Nenhuma tarefa concluída',
+      completedAt: 'Concluído em',
+      removedFromHistory: 'Removido do histórico',
     },
     // Newborn
     newborn: {
@@ -875,6 +880,11 @@ export const translations = {
       markComplete: 'Mark Complete',
       taskCompleted: 'Task completed',
       urgent: 'Urgent',
+      activeTasks: 'active tasks',
+      history: 'History',
+      noHistory: 'No completed tasks',
+      completedAt: 'Completed at',
+      removedFromHistory: 'Removed from history',
     },
     // Newborn
     newborn: {

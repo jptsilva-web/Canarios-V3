@@ -397,6 +397,22 @@ class SeasonBird(BaseModel):
 class ImportBirdsRequest(BaseModel):
     bird_ids: List[str]
 
+# Task History - stores completed/dismissed tasks
+class TaskHistory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
+    season_id: Optional[str] = None
+    task_id: str  # Original task ID (e.g., "hatch-xxx", "band-xxx")
+    task_type: str  # hatching, banding, weaning, laying, incubation
+    pair_id: Optional[str] = None
+    pair_name: str
+    cage_label: str
+    due_date: str
+    details: str
+    completed_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    action: str = "completed"  # completed, dismissed, auto_completed
+
 # Email sending function
 async def send_email_notification(to_email: str, subject: str, body: str, smtp_email: str = None, smtp_password: str = None):
     # Use provided credentials or fall back to environment
@@ -1434,9 +1450,15 @@ async def get_tasks(current_user: dict = Depends(get_current_user)):
         
         pair_name = pair.get("name") if pair else "Unknown"
         cage_label = cage.get("label") if cage else "Unknown"
+        clutch_status = clutch.get("status", "")
         
-        # Check for upcoming events
-        if clutch.get("expected_hatch_date"):
+        # Check which eggs have been banded
+        eggs = clutch.get("eggs", [])
+        hatched_eggs = [e for e in eggs if e.get("status") == "hatched"]
+        banded_eggs = [e for e in eggs if e.get("banded_date")]
+        
+        # HATCHING task: only show if status is INCUBATING (not yet hatched)
+        if clutch.get("expected_hatch_date") and clutch_status == ClutchStatus.INCUBATING:
             tasks.append(Task(
                 id=f"hatch-{clutch['id']}",
                 type="hatching",
@@ -1444,21 +1466,25 @@ async def get_tasks(current_user: dict = Depends(get_current_user)):
                 pair_name=pair_name,
                 cage_label=cage_label,
                 due_date=clutch["expected_hatch_date"],
-                details=f"Expected hatching - {len(clutch.get('eggs', []))} eggs"
+                details=f"Expected hatching - {len(eggs)} eggs"
             ))
         
-        if clutch.get("expected_band_date"):
-            tasks.append(Task(
-                id=f"band-{clutch['id']}",
-                type="banding",
-                pair_id=clutch["pair_id"],
-                pair_name=pair_name,
-                cage_label=cage_label,
-                due_date=clutch["expected_band_date"],
-                details="Banding due"
-            ))
+        # BANDING task: only show if status is HATCHING and there are hatched eggs not yet banded
+        if clutch.get("expected_band_date") and clutch_status == ClutchStatus.HATCHING:
+            unbanded_hatched = len(hatched_eggs) - len(banded_eggs)
+            if unbanded_hatched > 0:
+                tasks.append(Task(
+                    id=f"band-{clutch['id']}",
+                    type="banding",
+                    pair_id=clutch["pair_id"],
+                    pair_name=pair_name,
+                    cage_label=cage_label,
+                    due_date=clutch["expected_band_date"],
+                    details=f"Banding due - {unbanded_hatched} chicks to band"
+                ))
         
-        if clutch.get("expected_wean_date"):
+        # WEANING task: only show if status is WEANING (after banding, before completed)
+        if clutch.get("expected_wean_date") and clutch_status == ClutchStatus.WEANING:
             tasks.append(Task(
                 id=f"wean-{clutch['id']}",
                 type="weaning",
@@ -1466,11 +1492,11 @@ async def get_tasks(current_user: dict = Depends(get_current_user)):
                 pair_name=pair_name,
                 cage_label=cage_label,
                 due_date=clutch["expected_wean_date"],
-                details="Weaning due"
+                details=f"Weaning due - {len(banded_eggs)} chicks"
             ))
         
-        # Active laying/incubating
-        if clutch["status"] == ClutchStatus.LAYING:
+        # Active laying/incubating status tasks
+        if clutch_status == ClutchStatus.LAYING:
             tasks.append(Task(
                 id=f"laying-{clutch['id']}",
                 type="laying",
@@ -1478,9 +1504,9 @@ async def get_tasks(current_user: dict = Depends(get_current_user)):
                 pair_name=pair_name,
                 cage_label=cage_label,
                 due_date=today,
-                details=f"Currently laying - {len(clutch.get('eggs', []))} eggs"
+                details=f"Currently laying - {len(eggs)} eggs"
             ))
-        elif clutch["status"] == ClutchStatus.INCUBATING:
+        elif clutch_status == ClutchStatus.INCUBATING:
             tasks.append(Task(
                 id=f"incubating-{clutch['id']}",
                 type="incubation",
@@ -1488,12 +1514,55 @@ async def get_tasks(current_user: dict = Depends(get_current_user)):
                 pair_name=pair_name,
                 cage_label=cage_label,
                 due_date=clutch.get("expected_hatch_date", today),
-                details=f"Incubating - {len(clutch.get('eggs', []))} eggs"
+                details=f"Incubating - {len(eggs)} eggs"
             ))
     
     # Sort by due date
     tasks.sort(key=lambda x: x.due_date)
     return tasks
+
+# ============ TASK HISTORY API ============
+@api_router.get("/dashboard/task-history", response_model=List[TaskHistory])
+async def get_task_history(current_user: dict = Depends(get_current_user)):
+    """Get history of completed/dismissed tasks for the active season"""
+    active_season_id = await get_active_season_id(current_user["id"])
+    user_filter = {"$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+    
+    if active_season_id:
+        query = {
+            "$and": [
+                user_filter,
+                {"$or": [{"season_id": active_season_id}, {"season_id": None}, {"season_id": {"$exists": False}}]}
+            ]
+        }
+    else:
+        query = user_filter
+    
+    history = await db.task_history.find(query, {"_id": 0}).sort("completed_at", -1).to_list(100)
+    return history
+
+@api_router.post("/dashboard/task-history")
+async def add_task_to_history(task: TaskHistory, current_user: dict = Depends(get_current_user)):
+    """Add a task to history when it's completed or dismissed"""
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    task_dict = task.model_dump()
+    task_dict["user_id"] = current_user["id"]
+    task_dict["season_id"] = active_season_id
+    
+    await db.task_history.insert_one(task_dict)
+    return {"message": "Task added to history"}
+
+@api_router.delete("/dashboard/task-history/{task_id}")
+async def remove_from_history(task_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove a task from history"""
+    result = await db.task_history.delete_one({
+        "id": task_id,
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    })
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found in history")
+    return {"message": "Task removed from history"}
 
 # ============ BREEDING STATISTICS API ============
 class BreedingStats(BaseModel):
