@@ -311,15 +311,23 @@ Build a canary breeding control/management web application with a local database
   - Updated dashboard stats to reflect active season data
   - Birds remain GLOBAL (accessible across all seasons)
   - Test file: /app/backend/tests/test_season_data_isolation.py
+- ✅ **Import Birds to Season** - NEW FEATURE
+  - Birds are now associated with specific seasons via `season_birds` collection
+  - New `/api/season-birds` endpoint returns only birds imported to active season
+  - New `/api/season-birds/available` endpoint shows birds available to import
+  - New `/api/season-birds/import` endpoint imports selected birds to active season
+  - When creating a new bird, it's automatically added to the active season
+  - Import modal in Birds page allows selecting birds from previous seasons
+  - Clean UI with checkboxes, select all, and count of selected
+- ✅ **Sidebar Season Update** - BUG FIX
+  - Sidebar now immediately updates when activating a new season
+  - Uses custom event `seasonChanged` to notify Layout component
 - ✅ **Password Recovery** - Full implementation completed
   - forgot-password endpoint sends email with 8-char recovery code
   - reset-password endpoint validates token and updates password
   - Full UI flow: email → code entry → new password → success
   - Uses user's SMTP settings from Settings page
-- ✅ **Import Birds from Previous Seasons** - Already working!
-  - Birds are GLOBAL (not filtered by season_id)
-  - All 13 birds available in pair creation dropdowns regardless of active season
-  - No additional implementation needed - birds naturally available across seasons
+  - Fixed security issue: recovery code no longer shown in UI
 - ✅ Fixed Tasks page bug - completing one task no longer removes all tasks
 - ✅ Moved Settings menu to bottom of sidebar with visual separator
 - ✅ Implemented Backup & Restore functionality in Settings page

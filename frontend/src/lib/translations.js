@@ -124,6 +124,12 @@ export const translations = {
       birdDeleteError: 'Erro ao eliminar pássaro',
       stamRequired: 'STAM é obrigatório',
       classRequired: 'Classe é obrigatória',
+      // Import Birds
+      birdsImported: 'Aves importadas com sucesso!',
+      selectBirdsToImport: 'Selecione pelo menos uma ave para importar',
+      importError: 'Erro ao importar aves',
+      birdRemovedFromSeason: 'Ave removida da época',
+      removeError: 'Erro ao remover ave',
       // Pairs
       pairCreated: 'Casal criado',
       pairUpdated: 'Casal atualizado',
@@ -228,6 +234,17 @@ export const translations = {
       noBirds: 'Nenhum pássaro registado',
       males: 'machos',
       females: 'fêmeas',
+      male: 'Macho',
+      female: 'Fêmea',
+      unknown: 'Desconhecido',
+      // Import birds
+      importBirds: 'Importar Aves',
+      importDescription: 'Selecione as aves que deseja usar nesta época de criação.',
+      noAvailableBirds: 'Não há aves disponíveis para importar.',
+      selected: 'selecionadas',
+      selectAll: 'Selecionar Todas',
+      deselectAll: 'Desselecionar Todas',
+      import: 'Importar',
       // Table headers
       band: 'ANILHA',
       year: 'ANO',

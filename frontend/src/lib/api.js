@@ -36,6 +36,14 @@ export const birdsApi = {
   delete: (id) => api.delete(`/birds/${id}`),
 };
 
+// Season Birds API (Import birds to seasons)
+export const seasonBirdsApi = {
+  getSeasonBirds: () => api.get('/season-birds'),
+  getAvailableToImport: () => api.get('/season-birds/available'),
+  importBirds: (birdIds) => api.post('/season-birds/import', { bird_ids: birdIds }),
+  removeFromSeason: (birdId) => api.delete(`/season-birds/${birdId}`),
+};
+
 // Pairs API
 export const pairsApi = {
   getAll: (activeOnly) => api.get('/pairs', { params: { active_only: activeOnly } }),

@@ -7,7 +7,9 @@ import {
   Search,
   Filter,
   Check,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Download,
+  X
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -58,7 +60,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '../components/ui/popover';
-import { birdsApi } from '../lib/api';
+import { birdsApi, seasonBirdsApi } from '../lib/api';
 import { cn, formatDate } from '../lib/utils';
 import { toast } from 'sonner';
 import { CANARY_CLASSES } from '../data/canaryClasses';
@@ -233,7 +235,13 @@ export const Birds = () => {
   const [editingBird, setEditingBird] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
-  const [editingGender, setEditingGender] = useState(null); // Track which bird's gender is being edited inline
+  const [editingGender, setEditingGender] = useState(null);
+  
+  // Import birds modal state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [availableBirds, setAvailableBirds] = useState([]);
+  const [selectedBirdsToImport, setSelectedBirdsToImport] = useState([]);
+  const [importLoading, setImportLoading] = useState(false);
 
   // Default year is previous year
   const defaultYear = new Date().getFullYear() - 1;
@@ -253,7 +261,8 @@ export const Birds = () => {
 
   const fetchBirds = async () => {
     try {
-      const res = await birdsApi.getAll();
+      // Fetch birds for the active season only
+      const res = await seasonBirdsApi.getSeasonBirds();
       setBirds(res.data);
     } catch (error) {
       console.error('Error fetching birds:', error);
@@ -261,6 +270,62 @@ export const Birds = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAvailableBirds = async () => {
+    try {
+      const res = await seasonBirdsApi.getAvailableToImport();
+      setAvailableBirds(res.data);
+    } catch (error) {
+      console.error('Error fetching available birds:', error);
+      toast.error('Failed to load available birds');
+    }
+  };
+
+  const handleImportBirds = async () => {
+    if (selectedBirdsToImport.length === 0) {
+      toast.error(t('messages.selectBirdsToImport') || 'Selecione pelo menos uma ave para importar');
+      return;
+    }
+    
+    setImportLoading(true);
+    try {
+      const res = await seasonBirdsApi.importBirds(selectedBirdsToImport);
+      toast.success(t('messages.birdsImported') || `${res.data.imported_count} aves importadas com sucesso!`);
+      setImportDialogOpen(false);
+      setSelectedBirdsToImport([]);
+      fetchBirds(); // Refresh the birds list
+    } catch (error) {
+      console.error('Error importing birds:', error);
+      toast.error(t('messages.importError') || 'Erro ao importar aves');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleRemoveFromSeason = async (birdId) => {
+    try {
+      await seasonBirdsApi.removeFromSeason(birdId);
+      toast.success(t('messages.birdRemovedFromSeason') || 'Ave removida da época');
+      fetchBirds();
+    } catch (error) {
+      console.error('Error removing bird from season:', error);
+      toast.error(t('messages.removeError') || 'Erro ao remover ave');
+    }
+  };
+
+  const toggleBirdSelection = (birdId) => {
+    setSelectedBirdsToImport(prev => 
+      prev.includes(birdId) 
+        ? prev.filter(id => id !== birdId)
+        : [...prev, birdId]
+    );
+  };
+
+  const openImportDialog = () => {
+    fetchAvailableBirds();
+    setSelectedBirdsToImport([]);
+    setImportDialogOpen(true);
   };
 
   const fetchSavedStams = async () => {
@@ -410,21 +475,33 @@ export const Birds = () => {
             {birds.length} {t('nav.birds').toLowerCase()} ({maleCount} {t('birds.males')}, {femaleCount} {t('birds.females')})
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) {
-            setEditingBird(null);
-            resetForm();
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button 
-              className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90 font-bold"
-              data-testid="add-bird-btn"
-            >
-              <Plus size={20} className="mr-2" /> {t('birds.addBird')}
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {/* Import Birds Button */}
+          <Button 
+            variant="outline"
+            className="border-[#00BFA6] text-[#00BFA6] hover:bg-[#00BFA6]/10"
+            onClick={openImportDialog}
+            data-testid="import-birds-btn"
+          >
+            <Download size={20} className="mr-2" /> {t('birds.importBirds') || 'Importar Aves'}
+          </Button>
+          
+          {/* Add Bird Dialog */}
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) {
+              setEditingBird(null);
+              resetForm();
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button 
+                className="bg-[#FFC300] text-[#1A2035] hover:bg-[#FFC300]/90 font-bold"
+                data-testid="add-bird-btn"
+              >
+                <Plus size={20} className="mr-2" /> {t('birds.addBird')}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="bg-[#202940] border-white/10 text-white max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-xl font-['Barlow_Condensed']">
@@ -572,6 +649,124 @@ export const Birds = () => {
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+        </div>
+        
+        {/* Import Birds Modal */}
+        <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+          <DialogContent className="bg-[#202940] border-white/10 text-white max-w-2xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-['Barlow_Condensed']">
+                {t('birds.importBirds') || 'Importar Aves de Épocas Anteriores'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-slate-400 text-sm">
+                {t('birds.importDescription') || 'Selecione as aves que deseja usar nesta época de criação.'}
+              </p>
+              
+              {availableBirds.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  {t('birds.noAvailableBirds') || 'Não há aves disponíveis para importar.'}
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">
+                      {selectedBirdsToImport.length} {t('birds.selected') || 'selecionadas'}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedBirdsToImport(
+                        selectedBirdsToImport.length === availableBirds.length 
+                          ? [] 
+                          : availableBirds.map(b => b.id)
+                      )}
+                      className="text-[#00BFA6] hover:text-[#00BFA6]/80"
+                    >
+                      {selectedBirdsToImport.length === availableBirds.length 
+                        ? (t('birds.deselectAll') || 'Desselecionar Todas')
+                        : (t('birds.selectAll') || 'Selecionar Todas')}
+                    </Button>
+                  </div>
+                  
+                  <div className="max-h-[400px] overflow-y-auto border border-white/10 rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/10 hover:bg-transparent">
+                          <TableHead className="text-slate-300 w-12"></TableHead>
+                          <TableHead className="text-slate-300">{t('birds.bandNumber')}</TableHead>
+                          <TableHead className="text-slate-300">{t('birds.year')}</TableHead>
+                          <TableHead className="text-slate-300">{t('birds.gender')}</TableHead>
+                          <TableHead className="text-slate-300">{t('birds.stam')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {availableBirds.map((bird) => (
+                          <TableRow 
+                            key={bird.id}
+                            className={cn(
+                              "border-white/5 cursor-pointer transition-colors",
+                              selectedBirdsToImport.includes(bird.id) 
+                                ? "bg-[#00BFA6]/20 hover:bg-[#00BFA6]/30" 
+                                : "hover:bg-[#1A2035]"
+                            )}
+                            onClick={() => toggleBirdSelection(bird.id)}
+                          >
+                            <TableCell>
+                              <div className={cn(
+                                "w-5 h-5 rounded border flex items-center justify-center",
+                                selectedBirdsToImport.includes(bird.id)
+                                  ? "bg-[#00BFA6] border-[#00BFA6]"
+                                  : "border-white/30"
+                              )}>
+                                {selectedBirdsToImport.includes(bird.id) && (
+                                  <Check size={14} className="text-white" />
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-mono text-white">{bird.band_number}</TableCell>
+                            <TableCell className="text-slate-300">{bird.band_year}</TableCell>
+                            <TableCell>
+                              <span className={cn(
+                                "px-2 py-0.5 rounded-full text-xs font-medium",
+                                bird.gender === 'male' ? "bg-blue-500/20 text-blue-400" :
+                                bird.gender === 'female' ? "bg-pink-500/20 text-pink-400" :
+                                "bg-slate-500/20 text-slate-400"
+                              )}>
+                                {t(`birds.${bird.gender}`) || bird.gender}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-slate-300">{bird.stam || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+              
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setImportDialogOpen(false)}
+                  className="border-white/10 text-white hover:bg-[#1A2035]"
+                >
+                  {t('common.cancel') || 'Cancelar'}
+                </Button>
+                <Button 
+                  onClick={handleImportBirds}
+                  disabled={selectedBirdsToImport.length === 0 || importLoading}
+                  className="bg-[#00BFA6] text-white hover:bg-[#00BFA6]/90"
+                >
+                  {importLoading 
+                    ? (t('common.importing') || 'A importar...') 
+                    : `${t('birds.import') || 'Importar'} (${selectedBirdsToImport.length})`}
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

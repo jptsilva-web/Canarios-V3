@@ -130,6 +130,8 @@ export const Seasons = () => {
       await seasonsApi.activate(season.id);
       toast.success(t('messages.seasonActivated'));
       fetchSeasons();
+      // Dispatch event to notify Layout to update the active season year
+      window.dispatchEvent(new CustomEvent('seasonChanged', { detail: { year: season.year } }));
     } catch (error) {
       toast.error(t('messages.seasonActivateError'));
     }

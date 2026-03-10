@@ -385,6 +385,18 @@ class ManualTaskCreate(BaseModel):
     due_date: str
     task_type: str = "manual"
 
+# Season Bird Association - links birds to seasons
+class SeasonBird(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    season_id: str
+    bird_id: str
+    imported_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ImportBirdsRequest(BaseModel):
+    bird_ids: List[str]
+
 # Email sending function
 async def send_email_notification(to_email: str, subject: str, body: str, smtp_email: str = None, smtp_password: str = None):
     # Use provided credentials or fall back to environment
@@ -808,6 +820,17 @@ async def create_bird(input: BirdCreate, current_user: dict = Depends(get_curren
     bird = Bird(**input.model_dump(), user_id=current_user["id"])
     doc = bird.model_dump()
     await db.birds.insert_one(doc)
+    
+    # Automatically add the bird to the active season
+    active_season_id = await get_active_season_id(current_user["id"])
+    if active_season_id:
+        season_bird = SeasonBird(
+            user_id=current_user["id"],
+            season_id=active_season_id,
+            bird_id=bird.id
+        )
+        await db.season_birds.insert_one(season_bird.model_dump())
+    
     return bird
 
 @api_router.get("/birds/stams", response_model=List[str])
@@ -905,6 +928,108 @@ async def delete_bird(bird_id: str, current_user: dict = Depends(get_current_use
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Bird not found")
     return {"message": "Bird deleted"}
+
+# ============ SEASON BIRDS API (Import Birds to Season) ============
+@api_router.get("/season-birds", response_model=List[Bird])
+async def get_season_birds(current_user: dict = Depends(get_current_user)):
+    """Get birds imported/associated with the active season"""
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    if not active_season_id:
+        # No active season - return empty
+        return []
+    
+    # Get bird IDs associated with this season
+    season_bird_docs = await db.season_birds.find({
+        "user_id": current_user["id"],
+        "season_id": active_season_id
+    }, {"_id": 0}).to_list(1000)
+    
+    bird_ids = [sb["bird_id"] for sb in season_bird_docs]
+    
+    if not bird_ids:
+        return []
+    
+    # Get the actual bird records
+    birds = await db.birds.find({
+        "id": {"$in": bird_ids},
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0}).to_list(1000)
+    
+    return birds
+
+@api_router.get("/season-birds/available", response_model=List[Bird])
+async def get_available_birds_to_import(current_user: dict = Depends(get_current_user)):
+    """Get all birds that are NOT yet imported into the active season"""
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    # Get all birds for this user
+    all_birds = await db.birds.find({
+        "$or": [{"user_id": current_user["id"]}, {"user_id": None}, {"user_id": {"$exists": False}}]
+    }, {"_id": 0}).to_list(1000)
+    
+    if not active_season_id:
+        return all_birds
+    
+    # Get bird IDs already in this season
+    season_bird_docs = await db.season_birds.find({
+        "user_id": current_user["id"],
+        "season_id": active_season_id
+    }, {"_id": 0}).to_list(1000)
+    
+    imported_bird_ids = set(sb["bird_id"] for sb in season_bird_docs)
+    
+    # Return birds NOT in this season
+    available_birds = [b for b in all_birds if b["id"] not in imported_bird_ids]
+    
+    return available_birds
+
+@api_router.post("/season-birds/import")
+async def import_birds_to_season(request: ImportBirdsRequest, current_user: dict = Depends(get_current_user)):
+    """Import birds from previous seasons into the active season"""
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    if not active_season_id:
+        raise HTTPException(status_code=400, detail="No active season. Please activate a season first.")
+    
+    imported_count = 0
+    for bird_id in request.bird_ids:
+        # Check if already imported
+        existing = await db.season_birds.find_one({
+            "user_id": current_user["id"],
+            "season_id": active_season_id,
+            "bird_id": bird_id
+        })
+        
+        if not existing:
+            season_bird = SeasonBird(
+                user_id=current_user["id"],
+                season_id=active_season_id,
+                bird_id=bird_id
+            )
+            await db.season_birds.insert_one(season_bird.model_dump())
+            imported_count += 1
+    
+    return {"message": f"Successfully imported {imported_count} birds", "imported_count": imported_count}
+
+@api_router.delete("/season-birds/{bird_id}")
+async def remove_bird_from_season(bird_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove a bird from the active season (does not delete the bird itself)"""
+    active_season_id = await get_active_season_id(current_user["id"])
+    
+    if not active_season_id:
+        raise HTTPException(status_code=400, detail="No active season")
+    
+    result = await db.season_birds.delete_one({
+        "user_id": current_user["id"],
+        "season_id": active_season_id,
+        "bird_id": bird_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Bird not found in this season")
+    
+    return {"message": "Bird removed from season"}
 
 # ============ PAIRS API ============
 @api_router.post("/pairs", response_model=Pair)

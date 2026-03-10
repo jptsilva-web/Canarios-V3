@@ -57,7 +57,7 @@ export const Layout = ({ children }) => {
   const { language, changeLanguage, t } = useLanguage();
   const { user, logout } = useAuth();
   
-  // Fetch active season year
+  // Fetch active season year on mount and when location changes
   useEffect(() => {
     const fetchActiveSeason = async () => {
       try {
@@ -70,6 +70,17 @@ export const Layout = ({ children }) => {
       }
     };
     fetchActiveSeason();
+  }, [location.pathname]);
+  
+  // Listen for season change events from Seasons page
+  useEffect(() => {
+    const handleSeasonChanged = (event) => {
+      if (event.detail && event.detail.year) {
+        setActiveYear(event.detail.year);
+      }
+    };
+    window.addEventListener('seasonChanged', handleSeasonChanged);
+    return () => window.removeEventListener('seasonChanged', handleSeasonChanged);
   }, []);
   
   const navItems = getNavItems(t, activeYear);
