@@ -32,6 +32,7 @@ import { zonesApi, cagesApi, pairsApi, clutchesApi } from '../lib/api';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
+import { useSeasonChange } from '../hooks/useSeasonChange';
 
 // Stage colors - Breeding stages
 const STAGE_COLORS = {
@@ -381,6 +382,11 @@ export const Zones = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Reload data when season changes
+  useSeasonChange(() => {
+    fetchData();
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();

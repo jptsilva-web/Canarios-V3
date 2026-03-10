@@ -19,6 +19,7 @@ import { dashboardApi } from '../lib/api';
 import { formatDate, getDaysUntil, getDaysLabel, getTaskTypeColor } from '../lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
+import { useSeasonChange } from '../hooks/useSeasonChange';
 
 const TaskCard = ({ task, onComplete, t }) => {
   const days = getDaysUntil(task.due_date);
@@ -117,6 +118,11 @@ export const Tasks = () => {
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  // Reload tasks when season changes
+  useSeasonChange(() => {
+    fetchTasks();
+  });
 
   const handleCompleteTask = async (task) => {
     try {

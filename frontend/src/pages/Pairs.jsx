@@ -50,6 +50,7 @@ import { pairsApi, cagesApi, birdsApi, clutchesApi, zonesApi } from '../lib/api'
 import { cn, formatDate, getStatusColor } from '../lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
+import { useSeasonChange } from '../hooks/useSeasonChange';
 
 // Egg Status Component with click to change status
 const EggIcon = ({ egg, index, clutchId, clutchStatus, onUpdate, t }) => {
@@ -894,6 +895,11 @@ export const Pairs = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Reload data when season changes
+  useSeasonChange(() => {
+    fetchData();
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();

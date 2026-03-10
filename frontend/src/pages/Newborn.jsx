@@ -34,6 +34,7 @@ import { pairsApi, birdsApi, clutchesApi, cagesApi } from '../lib/api';
 import { cn, formatDate } from '../lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
+import { useSeasonChange } from '../hooks/useSeasonChange';
 
 export const Newborn = () => {
   const { t } = useLanguage();
@@ -50,6 +51,11 @@ export const Newborn = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Reload data when season changes
+  useSeasonChange(() => {
+    fetchData();
+  });
 
   const fetchData = async () => {
     try {

@@ -13,6 +13,7 @@ import { dashboardApi } from '../lib/api';
 import { formatDate, getDaysUntil, getDaysLabel, getTaskTypeColor } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../lib/LanguageContext';
+import { useSeasonChange } from '../hooks/useSeasonChange';
 
 const StatCard = ({ icon: Icon, label, value, color, trend }) => (
   <Card className="bg-[#202940] border-white/5 hover:border-[#FFC300]/30 transition-colors">
@@ -133,23 +134,30 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  const fetchData = async () => {
+    try {
+      const [statsRes, tasksRes] = await Promise.all([
+        dashboardApi.getStats(),
+        dashboardApi.getTasks(),
+      ]);
+      setStats(statsRes.data);
+      setTasks(tasksRes.data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsRes, tasksRes] = await Promise.all([
-          dashboardApi.getStats(),
-          dashboardApi.getTasks(),
-        ]);
-        setStats(statsRes.data);
-        setTasks(tasksRes.data);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
+  // Reload data when season changes
+  useSeasonChange(() => {
+    setLoading(true);
+    fetchData();
+  });
 
   if (loading) {
     return (

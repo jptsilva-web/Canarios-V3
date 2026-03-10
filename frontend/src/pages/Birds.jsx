@@ -61,6 +61,7 @@ import {
   PopoverTrigger,
 } from '../components/ui/popover';
 import { birdsApi, seasonBirdsApi } from '../lib/api';
+import { useSeasonChange } from '../hooks/useSeasonChange';
 import { cn, formatDate } from '../lib/utils';
 import { toast } from 'sonner';
 import { CANARY_CLASSES } from '../data/canaryClasses';
@@ -341,6 +342,11 @@ export const Birds = () => {
     fetchBirds();
     fetchSavedStams();
   }, []);
+
+  // Reload birds when season changes
+  useSeasonChange(() => {
+    fetchBirds();
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
