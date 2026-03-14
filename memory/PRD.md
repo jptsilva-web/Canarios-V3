@@ -50,6 +50,15 @@ Build a canary breeding control/management web application with a local database
   - Dashboard stats reflect active season (pairs, clutches filtered; birds global)
   - Creating new data automatically associates with active season
   - Switching seasons shows different data sets
+- ✅ **Season Switching** (VERIFIED WORKING - March 2026)
+  - Switch between existing seasons without prompts to create new ones
+  - Sidebar updates immediately to show active season year
+  - Data reloads automatically when switching seasons (useSeasonChange hook)
+- ✅ **Automatic Daily Task Reports** (IMPLEMENTED - March 2026)
+  - APScheduler runs hourly to check for users with daily reports enabled
+  - Configurable in Settings page: enable/disable and set time
+  - Sends email with overdue, today's, and upcoming tasks
+  - Per-user settings with user_id association
 - ✅ Full-stack application with React + FastAPI + MongoDB
 - ✅ Dashboard with stats cards and task preview
 - ✅ Bird registry with CRUD, search, gender filter, and **parent selection for genealogy**
@@ -133,9 +142,11 @@ Build a canary breeding control/management web application with a local database
 - `POST /api/backup/restore` - Upload and restore from JSON backup file
 
 ### Settings APIs
-- `/api/settings` - Get all settings (breeding & email)
+- `/api/settings` - Get all settings (breeding & email) - Now requires authentication
 - `/api/settings/breeding` - Save breeding cycle configuration
-- `/api/settings/email` - Save email notification settings
+- `/api/settings/email` - Save email notification settings (per-user with user_id)
+  - Supports: notification_email, email_enabled, smtp_email, smtp_password
+  - NEW: daily_report_enabled, daily_report_time
 - `/api/settings/test-email` - Send test email notification
 - `/api/manual-tasks` - Manual task management (CRUD)
 
@@ -161,8 +172,10 @@ Build a canary breeding control/management web application with a local database
 
 ### P1 (High Priority)
 - [x] Import birds from previous seasons ✅ (Birds are global - already working)
+- [x] Automatic daily email reports ✅ IMPLEMENTED (March 2026)
 - [ ] Bird photo attachments
 - [ ] Advanced analytics dashboard
+- [ ] Calendar view for tasks (partially implemented - manual tasks only)
 
 ### P2 (Medium Priority)
 - [x] Multiple user support with authentication ✅ IMPLEMENTED
