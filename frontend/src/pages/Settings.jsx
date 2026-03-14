@@ -18,6 +18,7 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
+import api from '../lib/api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,8 @@ const DEFAULT_EMAIL = {
   email_enabled: false,
   smtp_email: '',
   smtp_password: '',
+  daily_report_enabled: false,
+  daily_report_time: '08:00',
 };
 
 const STAGE_COLORS = [
@@ -74,14 +77,13 @@ export const Settings = () => {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/settings`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.breeding) {
-          setBreedingSettings({ ...DEFAULT_BREEDING, ...data.breeding });
+      const res = await api.get('/settings');
+      if (res.data) {
+        if (res.data.breeding) {
+          setBreedingSettings({ ...DEFAULT_BREEDING, ...res.data.breeding });
         }
-        if (data.email) {
-          setEmailSettings({ ...DEFAULT_EMAIL, ...data.email });
+        if (res.data.email) {
+          setEmailSettings({ ...DEFAULT_EMAIL, ...res.data.email });
         }
       }
     } catch (error) {
@@ -94,16 +96,8 @@ export const Settings = () => {
   const handleSaveBreeding = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/settings/breeding`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(breedingSettings),
-      });
-      if (res.ok) {
-        toast.success(t('messages.breedingSettingsSaved'));
-      } else {
-        toast.error(t('messages.settingsError'));
-      }
+      await api.post('/settings/breeding', breedingSettings);
+      toast.success(t('messages.breedingSettingsSaved'));
     } catch (error) {
       toast.error(t('messages.settingsError'));
     } finally {
@@ -114,16 +108,8 @@ export const Settings = () => {
   const handleSaveEmail = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/settings/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailSettings),
-      });
-      if (res.ok) {
-        toast.success(t('messages.emailSettingsSaved'));
-      } else {
-        toast.error(t('messages.settingsError'));
-      }
+      await api.post('/settings/email', emailSettings);
+      toast.success(t('messages.emailSettingsSaved'));
     } catch (error) {
       toast.error(t('messages.settingsError'));
     } finally {
@@ -142,17 +128,10 @@ export const Settings = () => {
     
     setTestingEmail(true);
     try {
-      const res = await fetch(`${API_URL}/api/settings/test-email`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        toast.success(t('messages.testEmailSent'));
-      } else {
-        const data = await res.json();
-        toast.error(data.detail || t('messages.testEmailError'));
-      }
+      await api.post('/settings/test-email');
+      toast.success(t('messages.testEmailSent'));
     } catch (error) {
-      toast.error(t('messages.testEmailError'));
+      toast.error(error.response?.data?.detail || t('messages.testEmailError'));
     } finally {
       setTestingEmail(false);
     }
@@ -388,6 +367,35 @@ export const Settings = () => {
               onCheckedChange={(checked) => setEmailSettings({ ...emailSettings, email_enabled: checked })}
               data-testid="email-enabled-switch"
             />
+          </div>
+
+          {/* Daily Report Configuration */}
+          <div className="p-4 rounded-lg bg-[#1A2035] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-white">{t('settings.dailyReport') || 'Daily Task Report'}</Label>
+                <p className="text-xs text-slate-400 mt-1">{t('settings.dailyReportDesc') || 'Receive an automatic daily email with your tasks'}</p>
+              </div>
+              <Switch
+                checked={emailSettings.daily_report_enabled}
+                onCheckedChange={(checked) => setEmailSettings({ ...emailSettings, daily_report_enabled: checked })}
+                data-testid="daily-report-enabled-switch"
+              />
+            </div>
+            
+            {emailSettings.daily_report_enabled && (
+              <div className="flex items-center gap-4 pt-2 border-t border-white/10">
+                <Label className="text-slate-300 whitespace-nowrap">{t('settings.reportTime') || 'Send at'}:</Label>
+                <Input
+                  type="time"
+                  value={emailSettings.daily_report_time}
+                  onChange={(e) => setEmailSettings({ ...emailSettings, daily_report_time: e.target.value })}
+                  className="bg-[#202940] border-white/10 text-white w-32"
+                  data-testid="daily-report-time-input"
+                />
+                <span className="text-xs text-slate-500">{t('settings.localTime') || '(local time)'}</span>
+              </div>
+            )}
           </div>
           
           <div className="space-y-2">

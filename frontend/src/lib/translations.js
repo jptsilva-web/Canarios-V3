@@ -466,6 +466,10 @@ export const translations = {
       resetDefaults: 'Repor Predefinições',
       stageColors: 'Cores dos Estados',
       language: 'Idioma',
+      dailyReport: 'Relatório Diário de Tarefas',
+      dailyReportDesc: 'Receber um email automático diário com as suas tarefas',
+      reportTime: 'Enviar às',
+      localTime: '(hora local)',
       // Backup & Restore
       backupRestore: 'Backup & Restauro',
       backupRestoreDesc: 'Crie uma cópia de segurança dos seus dados ou restaure a partir de um ficheiro anterior',
@@ -992,6 +996,10 @@ export const translations = {
       resetDefaults: 'Reset to Defaults',
       stageColors: 'Stage Colors',
       language: 'Language',
+      dailyReport: 'Daily Task Report',
+      dailyReportDesc: 'Receive an automatic daily email with your tasks',
+      reportTime: 'Send at',
+      localTime: '(local time)',
       // Backup & Restore
       backupRestore: 'Backup & Restore',
       backupRestoreDesc: 'Create a backup of your data or restore from a previous file',
@@ -1496,6 +1504,10 @@ export const translations = {
       resetDefaults: 'Restablecer Valores',
       stageColors: 'Colores de Estados',
       language: 'Idioma',
+      dailyReport: 'Informe Diario de Tareas',
+      dailyReportDesc: 'Recibir un email automático diario con tus tareas',
+      reportTime: 'Enviar a las',
+      localTime: '(hora local)',
       // Backup & Restore
       backupRestore: 'Backup y Restauración',
       backupRestoreDesc: 'Crea una copia de seguridad de tus datos o restaura desde un archivo anterior',

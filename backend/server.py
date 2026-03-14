@@ -21,6 +21,9 @@ import zipfile
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 import secrets
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -366,6 +369,9 @@ class EmailSettings(BaseModel):
     email_enabled: bool = False
     smtp_email: str = ""
     smtp_password: str = ""
+    daily_report_enabled: bool = False
+    daily_report_time: str = "08:00"
+    user_id: Optional[str] = None
 
 # Manual Task Model
 class ManualTask(BaseModel):
@@ -597,9 +603,15 @@ async def reset_password(input: ResetPasswordRequest):
 
 # ============ SETTINGS API ============
 @api_router.get("/settings")
-async def get_settings():
+async def get_settings(current_user: dict = Depends(get_current_user)):
     breeding = await db.settings.find_one({"type": "breeding"}, {"_id": 0})
-    email = await db.settings.find_one({"type": "email"}, {"_id": 0})
+    email = await db.settings.find_one(
+        {"type": "email", "user_id": current_user["id"]}, 
+        {"_id": 0}
+    )
+    # Fallback to global email settings if user-specific not found
+    if not email:
+        email = await db.settings.find_one({"type": "email", "user_id": {"$exists": False}}, {"_id": 0})
     return {
         "breeding": breeding or BreedingSettings().model_dump(),
         "email": email or EmailSettings().model_dump()
@@ -615,17 +627,27 @@ async def save_breeding_settings(input: BreedingSettings):
     return {"message": "Breeding settings saved"}
 
 @api_router.post("/settings/email")
-async def save_email_settings(input: EmailSettings):
+async def save_email_settings(input: EmailSettings, current_user: dict = Depends(get_current_user)):
+    settings_data = input.model_dump()
+    settings_data["user_id"] = current_user["id"]
+    settings_data["type"] = "email"
+    
     await db.settings.update_one(
-        {"type": "email"},
-        {"$set": {**input.model_dump(), "type": "email"}},
+        {"type": "email", "user_id": current_user["id"]},
+        {"$set": settings_data},
         upsert=True
     )
     return {"message": "Email settings saved"}
 
 @api_router.post("/settings/test-email")
-async def test_email():
-    email_settings = await db.settings.find_one({"type": "email"}, {"_id": 0})
+async def test_email(current_user: dict = Depends(get_current_user)):
+    email_settings = await db.settings.find_one(
+        {"type": "email", "user_id": current_user["id"]}, 
+        {"_id": 0}
+    )
+    if not email_settings:
+        email_settings = await db.settings.find_one({"type": "email"}, {"_id": 0})
+    
     if not email_settings or not email_settings.get("notification_email"):
         raise HTTPException(status_code=400, detail="No notification email configured")
     
@@ -1787,6 +1809,268 @@ async def send_daily_report(background_tasks: BackgroundTasks, current_user: dic
         }
     }
 
+# ============ AUTOMATIC DAILY REPORT SCHEDULER ============
+scheduler = AsyncIOScheduler()
+
+async def send_daily_reports_job():
+    """Background job to send daily reports to all users with the feature enabled"""
+    logger.info("Starting automatic daily report job...")
+    
+    try:
+        # Get all users with daily reports enabled
+        users_with_reports = []
+        
+        # Get all email settings with daily_report_enabled
+        async for settings in db.settings.find({"type": "email", "daily_report_enabled": True}, {"_id": 0}):
+            users_with_reports.append(settings)
+        
+        logger.info(f"Found {len(users_with_reports)} users with daily reports enabled")
+        
+        for email_setting in users_with_reports:
+            try:
+                user_id = email_setting.get("user_id")
+                if not user_id:
+                    continue
+                
+                user = await db.users.find_one({"id": user_id}, {"_id": 0})
+                if not user:
+                    continue
+                
+                notification_email = email_setting.get("notification_email") or user.get("email")
+                if not notification_email:
+                    continue
+                
+                # Get active season for this user
+                active_season_id = None
+                season = await db.seasons.find_one({
+                    "is_active": True,
+                    "$or": [{"user_id": user_id}, {"user_id": None}, {"user_id": {"$exists": False}}]
+                }, {"_id": 0})
+                if season:
+                    active_season_id = season.get("id")
+                
+                user_filter = {"$or": [{"user_id": user_id}, {"user_id": None}, {"user_id": {"$exists": False}}]}
+                
+                if active_season_id:
+                    season_filter = {
+                        "$and": [
+                            user_filter,
+                            {"season_id": active_season_id}
+                        ]
+                    }
+                else:
+                    season_filter = user_filter
+                
+                today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                
+                # Get all active clutches for this user
+                clutches = await db.clutches.find({**season_filter, "status": {"$ne": ClutchStatus.COMPLETED}}, {"_id": 0}).to_list(1000)
+                
+                tasks = []
+                for clutch in clutches:
+                    pair = await db.pairs.find_one({"id": clutch["pair_id"]}, {"_id": 0})
+                    cage = await db.cages.find_one({"id": pair["cage_id"]}, {"_id": 0}) if pair else None
+                    
+                    pair_name = pair.get("name") if pair else "Unknown"
+                    cage_label = cage.get("label") if cage else "Unknown"
+                    clutch_status = clutch.get("status", "")
+                    eggs = clutch.get("eggs", [])
+                    hatched_eggs = [e for e in eggs if e.get("status") == "hatched"]
+                    banded_eggs = [e for e in eggs if e.get("banded_date")]
+                    
+                    if clutch.get("expected_hatch_date") and clutch_status == ClutchStatus.INCUBATING:
+                        tasks.append({
+                            "type": "Hatching",
+                            "pair_name": pair_name,
+                            "cage_label": cage_label,
+                            "due_date": clutch["expected_hatch_date"],
+                            "details": f"Expected hatching - {len(eggs)} eggs"
+                        })
+                    
+                    if clutch.get("expected_band_date") and clutch_status == ClutchStatus.HATCHING:
+                        unbanded_hatched = len(hatched_eggs) - len(banded_eggs)
+                        if unbanded_hatched > 0:
+                            tasks.append({
+                                "type": "Banding",
+                                "pair_name": pair_name,
+                                "cage_label": cage_label,
+                                "due_date": clutch["expected_band_date"],
+                                "details": f"Banding due - {unbanded_hatched} chicks"
+                            })
+                    
+                    if clutch.get("expected_wean_date") and clutch_status == ClutchStatus.WEANING:
+                        tasks.append({
+                            "type": "Weaning",
+                            "pair_name": pair_name,
+                            "cage_label": cage_label,
+                            "due_date": clutch["expected_wean_date"],
+                            "details": f"Weaning due - {len(banded_eggs)} chicks"
+                        })
+                    
+                    if clutch_status == ClutchStatus.LAYING:
+                        tasks.append({
+                            "type": "Laying",
+                            "pair_name": pair_name,
+                            "cage_label": cage_label,
+                            "due_date": today,
+                            "details": f"Currently laying - {len(eggs)} eggs"
+                        })
+                    elif clutch_status == ClutchStatus.INCUBATING:
+                        tasks.append({
+                            "type": "Incubation",
+                            "pair_name": pair_name,
+                            "cage_label": cage_label,
+                            "due_date": clutch.get("expected_hatch_date", today),
+                            "details": f"Incubating - {len(eggs)} eggs"
+                        })
+                
+                # Also get manual tasks
+                manual_tasks = await db.manual_tasks.find({
+                    "completed": {"$ne": True},
+                    "$or": [{"user_id": user_id}, {"user_id": None}, {"user_id": {"$exists": False}}]
+                }, {"_id": 0}).to_list(100)
+                
+                for mt in manual_tasks:
+                    tasks.append({
+                        "type": "Manual",
+                        "pair_name": mt.get("title", ""),
+                        "cage_label": "",
+                        "due_date": mt.get("due_date", today),
+                        "details": mt.get("description", "")
+                    })
+                
+                tasks.sort(key=lambda x: x["due_date"])
+                
+                def parse_date(d):
+                    try:
+                        return datetime.strptime(d, "%Y-%m-%d").date()
+                    except:
+                        return None
+                
+                today_date = datetime.now(timezone.utc).date()
+                today_tasks = [t for t in tasks if parse_date(t["due_date"]) == today_date]
+                overdue_tasks = [t for t in tasks if parse_date(t["due_date"]) and parse_date(t["due_date"]) < today_date]
+                upcoming_tasks = [t for t in tasks if parse_date(t["due_date"]) and parse_date(t["due_date"]) > today_date][:10]
+                
+                # Build email content
+                email_body = f"""
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; background-color: #1A2035; color: #ffffff; padding: 20px; }}
+                        .container {{ max-width: 600px; margin: 0 auto; background-color: #202940; border-radius: 10px; padding: 20px; }}
+                        h1 {{ color: #FFC300; }}
+                        h2 {{ color: #00BFA6; border-bottom: 1px solid #333; padding-bottom: 10px; }}
+                        .task {{ background-color: #1A2035; border-radius: 8px; padding: 15px; margin: 10px 0; border-left: 4px solid #FFC300; }}
+                        .task-type {{ color: #FFC300; font-weight: bold; text-transform: uppercase; font-size: 12px; }}
+                        .task-pair {{ color: #ffffff; font-size: 16px; margin: 5px 0; }}
+                        .task-details {{ color: #94a3b8; font-size: 14px; }}
+                        .overdue {{ border-left-color: #E91E63 !important; }}
+                        .overdue .task-type {{ color: #E91E63; }}
+                        .empty {{ color: #64748b; text-align: center; padding: 20px; }}
+                        .footer {{ text-align: center; color: #64748b; font-size: 12px; margin-top: 20px; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>🐤 OrniTuga - Daily Task Report</h1>
+                        <p style="color: #94a3b8;">Report for {today} | Season: {season.get('year') if season else 'N/A'}</p>
+                        
+                        <h2>⚠️ Overdue ({len(overdue_tasks)})</h2>
+                """
+                
+                if overdue_tasks:
+                    for t in overdue_tasks:
+                        email_body += f"""
+                        <div class="task overdue">
+                            <div class="task-type">{t['type']}</div>
+                            <div class="task-pair">{t['pair_name']} - {t['cage_label']}</div>
+                            <div class="task-details">{t['details']} | Due: {t['due_date']}</div>
+                        </div>
+                        """
+                else:
+                    email_body += '<p class="empty">No overdue tasks</p>'
+                
+                email_body += f"""
+                        <h2>📅 Today ({len(today_tasks)})</h2>
+                """
+                
+                if today_tasks:
+                    for t in today_tasks:
+                        email_body += f"""
+                        <div class="task">
+                            <div class="task-type">{t['type']}</div>
+                            <div class="task-pair">{t['pair_name']} - {t['cage_label']}</div>
+                            <div class="task-details">{t['details']}</div>
+                        </div>
+                        """
+                else:
+                    email_body += '<p class="empty">No tasks for today</p>'
+                
+                email_body += f"""
+                        <h2>📆 Upcoming ({len(upcoming_tasks)})</h2>
+                """
+                
+                if upcoming_tasks:
+                    for t in upcoming_tasks:
+                        email_body += f"""
+                        <div class="task">
+                            <div class="task-type">{t['type']}</div>
+                            <div class="task-pair">{t['pair_name']} - {t['cage_label']}</div>
+                            <div class="task-details">{t['details']} | Due: {t['due_date']}</div>
+                        </div>
+                        """
+                else:
+                    email_body += '<p class="empty">No upcoming tasks</p>'
+                
+                email_body += """
+                        <div class="footer">
+                            <p>OrniTuga - Canary Breeding Management</p>
+                            <p>This is an automated daily report. Configure in Settings.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                # Get SMTP credentials
+                smtp_email = email_setting.get("smtp_email") or SMTP_EMAIL
+                smtp_password = email_setting.get("smtp_password") or SMTP_PASSWORD
+                
+                if smtp_email and smtp_password:
+                    await send_email_notification(
+                        notification_email,
+                        f"OrniTuga - Daily Task Report ({today})",
+                        email_body,
+                        smtp_email,
+                        smtp_password
+                    )
+                    logger.info(f"Daily report sent to {notification_email}")
+                
+            except Exception as e:
+                logger.error(f"Error sending daily report to user: {e}")
+                continue
+        
+        logger.info("Daily report job completed")
+    except Exception as e:
+        logger.error(f"Error in daily report job: {e}")
+
+def schedule_daily_reports():
+    """Schedule daily report jobs for all users"""
+    # Remove any existing jobs
+    scheduler.remove_all_jobs()
+    
+    # Add a job that runs every hour to check if reports need to be sent
+    # This allows for flexible per-user report times
+    scheduler.add_job(
+        send_daily_reports_job,
+        CronTrigger(minute=0),  # Run at the start of every hour
+        id='daily_reports_check',
+        replace_existing=True
+    )
+    
+    logger.info("Daily report scheduler configured")
+
 # ============ BREEDING STATISTICS API ============
 class BreedingStats(BaseModel):
     total_eggs: int = 0
@@ -2000,7 +2284,6 @@ async def get_bird_genealogy(bird_id: str):
     return result
 
 # ============ EXPORT API ============
-from fastapi.responses import StreamingResponse
 from io import BytesIO, StringIO
 import csv
 from reportlab.lib import colors
@@ -2526,6 +2809,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_event():
+    """Start the scheduler on app startup"""
+    logger.info("Starting application...")
+    schedule_daily_reports()
+    scheduler.start()
+    logger.info("Daily report scheduler started")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    scheduler.shutdown()
     client.close()
