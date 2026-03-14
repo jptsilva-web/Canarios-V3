@@ -351,7 +351,7 @@ export const Seasons = () => {
                       </h3>
                       {season.is_active && (
                         <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#FFC300] text-[#1A2035]">
-                          ACTIVE
+                          {t('seasons.active') || 'ACTIVE'}
                         </span>
                       )}
                     </div>
