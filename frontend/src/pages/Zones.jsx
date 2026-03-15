@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { zonesApi, cagesApi, pairsApi, clutchesApi } from '../lib/api';
+import api, { zonesApi, cagesApi, pairsApi, clutchesApi } from '../lib/api';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { useLanguage } from '../lib/LanguageContext';
@@ -364,13 +364,13 @@ export const Zones = () => {
         cagesApi.getAll(),
         pairsApi.getAll(),
         clutchesApi.getAll(),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings`).then(r => r.json()),
+        api.get('/settings'),
       ]);
       setZones(zonesRes.data);
       setCages(cagesRes.data);
       setPairs(pairsRes.data);
       setClutches(clutchesRes.data);
-      setBreedingSettings(settingsRes.breeding || {});
+      setBreedingSettings(settingsRes.data?.breeding || {});
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error(t('messages.zoneLoadError'));
