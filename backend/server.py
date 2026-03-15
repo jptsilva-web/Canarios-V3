@@ -40,7 +40,7 @@ SMTP_EMAIL = os.environ.get('SMTP_EMAIL', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 
 # JWT Configuration
-SECRET_KEY = os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32))
+SECRET_KEY = os.environ.get('SECRET_KEY', os.environ.get('JWT_SECRET_KEY', secrets.token_hex(32)))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
@@ -2844,6 +2844,11 @@ async def get_breeding_cards_data():
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Health check endpoint (outside /api prefix for Railway)
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy", "service": "ornituga-api"}
 
 app.add_middleware(
     CORSMiddleware,
