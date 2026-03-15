@@ -1,2 +1,2 @@
 #!/bin/bash
-cd backend && pip install -r requirements.txt && uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}
+cd backend && python3 -m pip install -r requirements.txt && python3 -m uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}
