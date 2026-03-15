@@ -1000,8 +1000,14 @@ async def get_season_birds(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/season-birds/available", response_model=List[Bird])
 async def get_available_birds_to_import(current_user: dict = Depends(get_current_user)):
-    """Get all birds that are NOT yet imported into the active season"""
+    """Get all birds that are NOT yet imported into the active season.
+    Only shows birds with band_year <= season year (can't import future birds into past seasons)
+    """
     active_season_id = await get_active_season_id(current_user["id"])
+    
+    # Get the active season year
+    active_season = await db.seasons.find_one({"id": active_season_id}, {"_id": 0}) if active_season_id else None
+    season_year = active_season.get("year") if active_season else None
     
     # Get all birds for this user
     all_birds = await db.birds.find({
@@ -1021,20 +1027,43 @@ async def get_available_birds_to_import(current_user: dict = Depends(get_current
     
     imported_bird_ids = set(sb["bird_id"] for sb in season_bird_docs)
     
-    # Return birds NOT in this season
-    available_birds = [b for b in all_birds if b["id"] not in imported_bird_ids]
+    # Return birds NOT in this season AND with band_year <= season year
+    # A bird from 2026 cannot be imported into season 2025
+    available_birds = []
+    for b in all_birds:
+        if b["id"] not in imported_bird_ids:
+            bird_year = b.get("band_year")
+            # If bird has a band_year, it must be <= season year
+            if bird_year and season_year:
+                try:
+                    if int(bird_year) <= int(season_year):
+                        available_birds.append(b)
+                except (ValueError, TypeError):
+                    # If year can't be parsed, include it
+                    available_birds.append(b)
+            else:
+                # If no year info, include it
+                available_birds.append(b)
     
     return available_birds
 
 @api_router.post("/season-birds/import")
 async def import_birds_to_season(request: ImportBirdsRequest, current_user: dict = Depends(get_current_user)):
-    """Import birds from previous seasons into the active season"""
+    """Import birds from previous seasons into the active season.
+    Validates that bird band_year <= season year (can't import future birds into past seasons)
+    """
     active_season_id = await get_active_season_id(current_user["id"])
     
     if not active_season_id:
         raise HTTPException(status_code=400, detail="No active season. Please activate a season first.")
     
+    # Get the active season year
+    active_season = await db.seasons.find_one({"id": active_season_id}, {"_id": 0})
+    season_year = active_season.get("year") if active_season else None
+    
     imported_count = 0
+    skipped_count = 0
+    
     for bird_id in request.bird_ids:
         # Check if already imported
         existing = await db.season_birds.find_one({
@@ -1043,16 +1072,38 @@ async def import_birds_to_season(request: ImportBirdsRequest, current_user: dict
             "bird_id": bird_id
         })
         
-        if not existing:
-            season_bird = SeasonBird(
-                user_id=current_user["id"],
-                season_id=active_season_id,
-                bird_id=bird_id
-            )
-            await db.season_birds.insert_one(season_bird.model_dump())
-            imported_count += 1
+        if existing:
+            continue
+        
+        # Get the bird to validate its year
+        bird = await db.birds.find_one({"id": bird_id}, {"_id": 0})
+        if not bird:
+            continue
+        
+        # Validate: bird band_year must be <= season year
+        bird_year = bird.get("band_year")
+        if bird_year and season_year:
+            try:
+                if int(bird_year) > int(season_year):
+                    # Can't import a bird from the future into a past season
+                    skipped_count += 1
+                    continue
+            except (ValueError, TypeError):
+                pass
+        
+        season_bird = SeasonBird(
+            user_id=current_user["id"],
+            season_id=active_season_id,
+            bird_id=bird_id
+        )
+        await db.season_birds.insert_one(season_bird.model_dump())
+        imported_count += 1
     
-    return {"message": f"Successfully imported {imported_count} birds", "imported_count": imported_count}
+    message = f"Successfully imported {imported_count} birds"
+    if skipped_count > 0:
+        message += f" ({skipped_count} skipped - bird year is after season year)"
+    
+    return {"message": message, "imported_count": imported_count, "skipped_count": skipped_count}
 
 @api_router.delete("/season-birds/{bird_id}")
 async def remove_bird_from_season(bird_id: str, current_user: dict = Depends(get_current_user)):
