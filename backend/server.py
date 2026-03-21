@@ -2850,6 +2850,12 @@ app.include_router(api_router)
 async def health_check():
     return {"status": "healthy", "service": "ornituga-api"}
 
+
+@app.get("/")
+async def root():
+    return {"message": "OrniTuga API", "status": "online", "docs": "/docs"}
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
