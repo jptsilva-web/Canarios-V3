@@ -2884,12 +2884,18 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     """Start the scheduler on app startup"""
-    logger.info("Starting application...")
-    schedule_daily_reports()
-    scheduler.start()
-    logger.info("Daily report scheduler started")
+    try:
+        logger.info("Starting application...")
+        schedule_daily_reports()
+        scheduler.start()
+        logger.info("Daily report scheduler started")
+    except Exception as e:
+        logger.error(f"Startup error: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    scheduler.shutdown()
-    client.close()
+    try:
+        scheduler.shutdown()
+        client.close()
+    except Exception as e:
+        logger.error(f"Shutdown error: {e}")
