@@ -93,12 +93,19 @@ async def get_active_season_id(user_id: str) -> Optional[str]:
 app = FastAPI(title="Canary Breeding Control API")
 
 # CORS middleware - must be added immediately after app creation
+cors_origins = os.environ.get('CORS_ORIGINS', '*')
+if cors_origins == '*':
+    origins = ["*"]
+else:
+    origins = [origin.strip() for origin in cors_origins.split(',')]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Create a router with the /api prefix
