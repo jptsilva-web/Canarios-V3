@@ -94,12 +94,14 @@ app = FastAPI(title="Canary Breeding Control API")
 
 # CORS middleware - must be added immediately after app creation
 cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+print(f"CORS_ORIGINS env: '{cors_origins_env}'")
 if cors_origins_env:
     origins = [origin.strip() for origin in cors_origins_env.split(',')]
     allow_credentials = True
 else:
     origins = ["*"]
     allow_credentials = False
+print(f"CORS origins: {origins}, credentials: {allow_credentials}")
 
 app.add_middleware(
     CORSMiddleware,
