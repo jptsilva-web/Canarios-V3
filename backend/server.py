@@ -92,6 +92,15 @@ async def get_active_season_id(user_id: str) -> Optional[str]:
 # Create the main app
 app = FastAPI(title="Canary Breeding Control API")
 
+# CORS middleware - must be added immediately after app creation
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
@@ -2855,14 +2864,6 @@ async def health_check():
 async def root():
     return {"message": "OrniTuga API", "status": "online", "docs": "/docs"}
 
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Configure logging
 logging.basicConfig(
