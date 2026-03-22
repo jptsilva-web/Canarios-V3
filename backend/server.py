@@ -2886,16 +2886,17 @@ async def startup_event():
     """Start the scheduler on app startup"""
     try:
         logger.info("Starting application...")
-        schedule_daily_reports()
-        scheduler.start()
-        logger.info("Daily report scheduler started")
+        # Temporarily disabled scheduler to debug
+        # schedule_daily_reports()
+        # scheduler.start()
+        logger.info("Application started (scheduler disabled for debug)")
     except Exception as e:
         logger.error(f"Startup error: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     try:
-        scheduler.shutdown()
+        # scheduler.shutdown()
         client.close()
     except Exception as e:
         logger.error(f"Shutdown error: {e}")
